@@ -126,7 +126,6 @@ function createCharacter(id, isLocal = false) {
     } else {
         players[id] = character;
     }
-
     return character;
 }
 
@@ -413,7 +412,6 @@ function moveCharacter() {
     if (keyState['ArrowUp'] || keyState['KeyW']) {
         direction.z += speed;
     }
-
     if (keyState['ArrowLeft'] || keyState['KeyA']) {
         localCharacter.rotation.y += rotationSpeed;
     }
@@ -426,7 +424,7 @@ function moveCharacter() {
         localCharacter.position.add(direction);
 
         // 충돌 감지 및 처리
-        if (detectCollision(localCharacter, desks) || localCharacter.position.x < -9.5 || localCharacter.position.x > 9.5 || localCharacter.position.z < -9.5 || (localCharacter.position.z > 9.5 && localCharacter.position.z < 10.5 && Math.abs(localCharacter.position.x) > 1)) {
+        if (detectCollision(localCharacter, collisionObjects)) {
             localCharacter.position.sub(direction);
         } else {
             ws.send(JSON.stringify({
