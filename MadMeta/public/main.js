@@ -76,70 +76,82 @@ const sprites = []; // 텍스트 스프라이트를 저장할 배열
 let localCharacter = null; // 로컬 캐릭터 변수
 const players = {}; // 다른 플레이어들을 저장할 객체
 
-// WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.40:8080');
-
-ws.onopen = () => {
-    ws.id = Date.now().toString(); // 간단한 클라이언트 식별자 설정
-    localCharacter = createCharacter(scene, ws.id, true); // 로컬 캐릭터 생성
-};
-
-ws.onmessage = (message) => {
-    const data = JSON.parse(message.data);
-    console.log(data);
-    if (data.type === 'init') {
-        // 기존 플레이어 추가
-        if (data.states) {
-            Object.keys(data.states).forEach(clientId => {
-                const state = data.states[clientId];
-                const character = createCharacter(scene, clientId);
-                character.position.set(state.position.x, state.position.y, state.position.z);
-                character.rotation.y = state.rotation.y;
-                players[clientId] = character;
-            });
-        }
-    } else if (data.type === 'newPlayer') {
-        // 새로운 플레이어 추가
-        const character = createCharacter(scene, data.id);
-        players[data.id] = character;
-    } else if (data.type === 'removePlayer') {
-        // 플레이어 제거
-        const player = players[data.id];
-        if (player) {
-            scene.remove(player);
-            delete players[data.id];
-        }
-    } else if (data.type === 'update') {
-        // 플레이어 위치 및 회전 업데이트
-        let player = players[data.id];
-        if (player) {
-            player.position.set(data.position.x, data.position.y, data.position.z);
-            player.rotation.y = data.rotation.y;
-        }
-    }
-};
-
-ws.onclose = () => {
-    Object.keys(players).forEach(id => {
-        scene.remove(players[id]);
-        delete players[id];
-    });
-};
 
 // 키보드 입력 처리
-const keyState = {};
 window.addEventListener('keydown', (event) => {
     keyState[event.code] = true;
+
+    if (event.code === 'KeyQ') {
+        switchWeapon();
+    }
+
+    if (event.code === 'KeyV') {
+        cameraMode = (cameraMode + 1) % 3;
+    }
+
+    if (event.code === 'Space') {
+        if (hasGun) {
+            shoot();
+        } else {
+            attack();
+        }
+    }
 });
+
+
 window.addEventListener('keyup', (event) => {
     keyState[event.code] = false;
 });
 
+// 캐릭터 간 충돌 감지 함수
+function detectCharacterCollision() {
+    if (localCharacter) {
+        const localBox = new THREE.Box3().setFromObject(localCharacter);
+        for (const id in players) {
+            const player = players[id];
+            if (player) {
+                const playerBox = new THREE.Box3().setFromObject(player);
+                if (localBox.intersectsBox(playerBox)) {
+                    console.log('충돌!');
+                }
+            }
+        }
+    }
+}
+
+// 카메라가 로컬 캐릭터를 따라가도록 설정
+function followCharacter() {
+    if (!localCharacter) return;
+
+    if (cameraMode === 0) {
+        // 기본 시점
+        camera.position.x = localCharacter.position.x;
+        camera.position.z = localCharacter.position.z + 10;
+        camera.position.y = localCharacter.position.y + 5;
+        camera.lookAt(localCharacter.position);
+    } else if (cameraMode === 1) {
+        // 1인칭 시점
+        const direction = new THREE.Vector3();
+        localCharacter.getWorldDirection(direction);
+        camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.6, 0));
+        camera.position.add(direction.multiplyScalar(0.5));
+        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(2)));
+    } else if (cameraMode === 2) {
+        // 3인칭 뒷통수 시점
+        const direction = new THREE.Vector3();
+        localCharacter.getWorldDirection(direction);
+        camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.5, 0).sub(direction.multiplyScalar(2)));
+        camera.lookAt(localCharacter.position);
+    }
+}
+
 // 애니메이션 루프
 function animate() {
     requestAnimationFrame(animate);
-    moveCharacter(localCharacter, keyState, ws, players, desks.concat(walls)); // 로컬 캐릭터 이동
-    followCharacter(camera, localCharacter); // 카메라가 로컬 캐릭터를 따라가도록 설정
+    moveCharacter(); // 로컬 캐릭터 이동
+    followCharacter(); // 카메라가 로컬 캐릭터를 따라가도록 설정
+    detectCharacterCollision(); // 캐릭터 간 충돌 감지
+    updateBullets(); // 총알 업데이트
     renderer.render(scene, camera);
 }
 animate();
