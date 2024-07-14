@@ -8,7 +8,7 @@ const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, 'localhost', () => {
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
 
@@ -68,4 +68,4 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log('WebSocket server is running on ws://0.0.0.0:8080');
+console.log('WebSocket server is running on ws://localhost:8080');
