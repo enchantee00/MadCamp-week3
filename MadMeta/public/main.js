@@ -118,26 +118,26 @@ createBench(40, 10);
 createFountain(0, 30);
 
 
-// 현재 시간을 나타내는 텍스트 생성 및 업데이트
-const fontLoader = new THREE.FontLoader();
+// // 현재 시간을 나타내는 텍스트 생성 및 업데이트
+// const fontLoader = new THREE.FontLoader();
 
-let timeText;
-fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-    const textGeometry = new THREE.TextGeometry(getCurrentTime(), {
-        font: font,
-        size: 5,
-        height: 1,
-        curveSegments: 12,
-        bevelEnabled: false
-    });
+// let timeText;
+// fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+//     const textGeometry = new THREE.TextGeometry(getCurrentTime(), {
+//         font: font,
+//         size: 5,
+//         height: 1,
+//         curveSegments: 12,
+//         bevelEnabled: false
+//     });
 
-    const textMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-    timeText = new THREE.Mesh(textGeometry, textMaterial);
-    timeText.position.set(0, 15, 30);
-    scene.add(timeText);
+//     const textMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+//     timeText = new THREE.Mesh(textGeometry, textMaterial);
+//     timeText.position.set(0, 15, 30);
+//     scene.add(timeText);
 
-    setInterval(updateTimeText, 1000);
-});
+//     setInterval(updateTimeText, 1000);
+// });
 
 
 

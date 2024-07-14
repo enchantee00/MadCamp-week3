@@ -1,9 +1,8 @@
-
 let bullets = [];
 const keyState = {};
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.40:8080');
+const ws = new WebSocket('ws://localhost:8080');
 
 ws.onopen = () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
@@ -24,6 +23,8 @@ ws.onmessage = (message) => {
                 const character = createCharacter(clientId);
                 character.position.set(state.position.x, state.position.y, state.position.z);
                 character.rotation.y = state.rotation.y;
+                character.hp = state.hp || 100; // 초기 hp 설정
+                updateHPBar(character);
             });
         }
     } else if (data.type === 'newPlayer') {
@@ -293,7 +294,6 @@ function updateBullets() {
         }
     });
 }
-
 function animate() {
     requestAnimationFrame(animate);
     moveCharacter();

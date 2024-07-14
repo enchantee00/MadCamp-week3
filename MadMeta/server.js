@@ -40,7 +40,8 @@ wss.on('connection', (ws) => {
     if (data.position && data.rotation) {
       states[ws.id] = {
         position: data.position,
-        rotation: data.rotation
+        rotation: data.rotation,
+        hp: states[ws.id]?.hp || 100 // 초기 hp 설정
       };
 
       // 모든 클라이언트에게 브로드캐스트

@@ -86,7 +86,7 @@ function createLamp(scene, x, y, z) {
     const light = new THREE.Mesh(lightGeometry, lightMaterial);
     light.position.set(x, y + 10, z);
     scene.add(light);
-
+}
 
 // 충돌 감지 함수
 function detectCollision(object, targetArray) {
