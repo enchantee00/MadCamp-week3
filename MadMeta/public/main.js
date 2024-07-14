@@ -82,7 +82,7 @@ window.addEventListener('keydown', (event) => {
     keyState[event.code] = true;
 
     if (event.code === 'KeyQ') {
-        switchWeapon();
+        switchItem();
     }
 
     if (event.code === 'KeyV') {
@@ -135,7 +135,7 @@ function followCharacter() {
         localCharacter.getWorldDirection(direction);
         camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.6, 0));
         camera.position.add(direction.multiplyScalar(0.5));
-        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(2)));
+        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(7)));
     } else if (cameraMode === 2) {
         // 3인칭 뒷통수 시점
         const direction = new THREE.Vector3();
@@ -152,7 +152,23 @@ function animate() {
     followCharacter(); // 카메라가 로컬 캐릭터를 따라가도록 설정
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
+        // 모든 캐릭터의 HP 바가 카메라를 향하도록 업데이트
+        Object.values(players).forEach(player => {
+            const bar = player.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
+            if (bar) {
+                bar.lookAt(camera.position);
+            }
+        });
+    
+        if (localCharacter) {
+            const localBar = localCharacter.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
+            if (localBar) {
+                localBar.lookAt(camera.position);
+            }
+        }
+    
     renderer.render(scene, camera);
+
 }
 animate();
 
