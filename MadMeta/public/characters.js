@@ -7,6 +7,7 @@ let hasWeapon = false;
 let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
+
 // HP 바 생성 함수
 function createHPBar(character) {
     const barGeometry = new THREE.PlaneGeometry(1, 0.1);
@@ -15,12 +16,8 @@ function createHPBar(character) {
     bar.position.set(0, 2.0, 0);
     character.add(bar);
 
-    // HP 바가 항상 카메라를 향하도록 함
-    bar.lookAt(camera.position);
-
     return bar;
 }
-
 
 // HP 바 업데이트 함수
 function updateHPBar(character) {
@@ -82,13 +79,13 @@ function createCharacter(id, isLocal = false) {
     const armGeometry = new THREE.BoxGeometry(0.2, 0.6, 0.2);
     const armMaterial = new THREE.MeshBasicMaterial({ color: 0xffe0bd });
     const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-    leftArm.position.set(-0.4, 1.2, 0);
+    leftArm.position.set(-0.4, 1, 0);
     leftArm.geometry.translate(0, -0.3, 0); // 팔의 중심을 어깨쪽으로 이동
     leftArm.name = "leftArm"; // 왼팔에 이름 추가
     character.add(leftArm);
 
     const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-    rightArm.position.set(0.4, 1.2, 0);
+    rightArm.position.set(0.4, 1, 0);
     rightArm.geometry.translate(0, -0.3, 0); // 팔의 중심을 어깨쪽으로 이동
     rightArm.name = "rightArm"; // 오른팔에 이름 추가
     character.add(rightArm);
@@ -132,8 +129,6 @@ function createCharacter(id, isLocal = false) {
 
     return character;
 }
-
-
 
 // 무기 생성 함수
 function createWeapon(type, position) {
@@ -179,7 +174,8 @@ function pickupItem(type) {
                 const rightArm = localCharacter.getObjectByName("rightArm");
                 if (rightArm) {
                     rightArm.add(item); // 오른팔에 무기 추가
-                    item.position.set(0, -1, 0.4); // 손 위치에 아이템 배치
+                    if(type=="sword"){                    item.position.set(0, -1, 0.4);} // 손 위치에 아이템 배치}
+                    else{item.position.set(0, -1, 0);} // 손 위치에 아이템 배치
                     item.rotation.set(Math.PI / 2, 0, 0);
                 } else {
                     console.error("오른팔을 찾을 수 없습니다.");
@@ -235,6 +231,7 @@ function switchItem() {
         }
     }
 }
+
 // 무기 공격 함수
 function attack() {
     if (!hasWeapon || isAttacking) {
@@ -347,8 +344,6 @@ function attack() {
     }
 }
 
-
-
 // 총 발사 함수
 function shoot() {
     if (!hasGun || isShooting) {
@@ -407,11 +402,12 @@ function shoot() {
         isShooting = false; // 오류 발생 시 shooting 상태 초기화
     }
 }
+
 function moveCharacter() {
     if (!localCharacter) return;
 
-    const speed = 0.1; // 이동 속도 조정
-    const rotationSpeed = 0.1; // 회전 속도 조정
+    const speed = 0.08; // 이동 속도 조정
+    const rotationSpeed = 0.05; // 회전 속도 조정
     let direction = new THREE.Vector3();
 
     if (keyState['ArrowUp'] || keyState['KeyW']) {
