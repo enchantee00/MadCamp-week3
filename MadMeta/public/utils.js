@@ -41,8 +41,18 @@ function createBullet() {
 
 // 총알 업데이트 함수
 function updateBullets() {
-    bullets.forEach(bullet => {
+    const maxBulletDistance = 50; // 총알의 최대 거리 설정
+
+    bullets.forEach((bullet, index) => {
         bullet.position.add(bullet.userData.velocity);
+        const distanceTravelled = bullet.position.distanceTo(bullet.userData.startPosition);
+
+        if (distanceTravelled > maxBulletDistance) {
+            scene.remove(bullet);
+            bullets.splice(index, 1);
+            return; // 현재 총알은 이미 제거되었으므로, 다음 총알로 넘어감
+        }
+
         // 충돌 감지 및 처리
         Object.keys(players).forEach(id => {
             const player = players[id];
@@ -58,8 +68,10 @@ function updateBullets() {
                         player.rotation.x = Math.PI / 2;
                     }
                     scene.remove(bullet);
+                    bullets.splice(index, 1);
                 }
             }
         });
     });
 }
+

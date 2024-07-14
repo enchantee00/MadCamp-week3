@@ -79,7 +79,7 @@ window.addEventListener('keydown', (event) => {
     keyState[event.code] = true;
 
     if (event.code === 'KeyQ') {
-        switchWeapon();
+        switchItem();
     }
 
     if (event.code === 'KeyV') {
@@ -131,7 +131,7 @@ function followCharacter() {
         localCharacter.getWorldDirection(direction);
         camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.6, 0));
         camera.position.add(direction.multiplyScalar(0.5));
-        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(2)));
+        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(7)));
     } else if (cameraMode === 2) {
         // 3인칭 뒷통수 시점
         const direction = new THREE.Vector3();
