@@ -257,12 +257,12 @@ function shoot() {
 function moveCharacter() {
     if (!localCharacter) return;
 
-    const speed = 0.05; // 이동 속도 조정
-    const rotationSpeed = 0.02; // 회전 속도 조정
+    const speed = 0.1; // 이동 속도 조정
+    const rotationSpeed = 0.07; // 회전 속도 조정
     let direction = new THREE.Vector3();
 
     if (keyState['ArrowUp'] || keyState['KeyW']) {
-        direction.z -= speed;
+        direction.z += speed;
     }
 
     if (keyState['ArrowLeft'] || keyState['KeyA']) {
@@ -277,7 +277,7 @@ function moveCharacter() {
         localCharacter.position.add(direction);
 
         // 충돌 감지 및 처리
-        if (detectCollision(localCharacter, desks) || localCharacter.position.x < -9.5 || localCharacter.position.x > 9.5 || localCharacter.position.z < -9.5 || (localCharacter.position.z > 9.5 && localCharacter.position.z < 10.5 && Math.abs(localCharacter.position.x) > 1)) {
+        if (detectCollision(localCharacter, collisionObjects)) {
             localCharacter.position.sub(direction);
         } else {
             ws.send(JSON.stringify({

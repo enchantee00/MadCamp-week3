@@ -1,10 +1,9 @@
 // gameState.js
-
 let bullets = [];
 const keyState = {};
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://localhost:8080');
+const ws = new WebSocket('ws://143.248.226.40:8080');
 
 ws.onopen = () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
