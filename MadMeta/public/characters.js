@@ -118,7 +118,6 @@ function createCharacter(id, isLocal = false) {
     } else {
         players[id] = character;
     }
-
     return character;
 }
 
@@ -264,7 +263,6 @@ function moveCharacter() {
     if (keyState['ArrowUp'] || keyState['KeyW']) {
         direction.z -= speed;
     }
-
     if (keyState['ArrowLeft'] || keyState['KeyA']) {
         localCharacter.rotation.y += rotationSpeed;
     }
