@@ -33,25 +33,62 @@ floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
 
+
+let inputBox, inputText, submitText;
+
+function init() {
+    inputBox = document.getElementById('inputBox');
+    inputText = document.getElementById('inputText');
+    submitText = document.getElementById('submitText');
+    
+    submitText.addEventListener('click', () => {
+        const text = inputText.value;
+        updateWhiteboardTexture(currentWhiteboard, text);
+        inputBox.style.display = 'none';
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (inputBox.style.display === 'block') {
+            // 입력 창이 표시된 상태에서는 특정 키 입력을 무시
+            if (event.key === 'Enter') {
+                const text = inputText.value;
+                if (currentWhiteboard) {
+                    updateWhiteboardTexture(currentWhiteboard, text);
+                }
+                inputBox.style.display = 'none';
+            } else if (event.key === 'Escape') {
+                inputBox.style.display = 'none';
+            }
+            event.preventDefault(); // 기본 동작을 막음
+        }
+    });
+}
+
+init();
+
+
+// 화이트보드 텍스처 업데이트 함수
+function updateWhiteboardTexture(whiteboard, text) {
+    const { canvas, context, texture } = whiteboard;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'white';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'black';
+    context.font = '48px Arial';
+    context.fillText(text, 50, 100);
+    texture.needsUpdate = true; // 텍스처가 업데이트되었음을 알림
+}
+
+classrooms = [];
 // 강의실 생성 함수
 function createClassroom(x, z) {
     // 벽 추가
-    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xefe7da });
 
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), wallMaterial);
     backWall.position.set(x, 5, z - 10.5); // 두께 1을 고려하여 위치 조정
     scene.add(backWall);
     collisionObjects.push(backWall);
-
-    const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(9, 10, 1), wallMaterial);
-    frontWallLeft.position.set(x - 5.5, 5, z + 15.5); // 두께 1을 고려하여 위치 조정
-    scene.add(frontWallLeft);
-    collisionObjects.push(frontWallLeft);
-
-    const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(9, 10, 1), wallMaterial);
-    frontWallRight.position.set(x + 5.5, 5, z + 15.5); // 두께 1을 고려하여 위치 조정
-    scene.add(frontWallRight);
-    collisionObjects.push(frontWallRight);
 
     const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 10, 26), wallMaterial);
     leftWall.position.set(x - 10.5, 5, z); // 두께 1을 고려하여 위치 조정
@@ -86,17 +123,51 @@ function createClassroom(x, z) {
     // 책상과 의자 배치
     for (let i = -4; i <= 4; i += 2) {
         for (let j = -8; j <= 8; j += 4) {
+            if (j === 8) continue;
             createDesk(x + i, z - j);
         }
     }
 
-    // 문 추가
-    const doorGeometry = new THREE.PlaneGeometry(2, 5);
-    const doorMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const door = new THREE.Mesh(doorGeometry, doorMaterial);
-    door.position.set(x, 2.5, z + 14.5); // 문을 강의실 앞에 위치
-    scene.add(door);
-    door.updateWorldMatrix(true, false);
+     // 단상 추가 (층이 있는 형태)
+     function createPodium(px, pz) {
+        const podiumGeometry1 = new THREE.BoxGeometry(6, 1, 3);
+        const podiumMaterial1 = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+        const podium1 = new THREE.Mesh(podiumGeometry1, podiumMaterial1);
+        podium1.position.set(px, 0.5, pz - 9);
+        scene.add(podium1);
+    }
+
+    createPodium(x, z);
+
+     // 화이트보드 추가 (Canvas 텍스처 사용)
+     function createWhiteboard(wx, wz) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 512;
+        const context = canvas.getContext('2d');
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'black';
+        context.font = '48px Arial';
+        context.fillText('Whiteboard', 50, 100);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const whiteboardMaterial = new THREE.MeshBasicMaterial({ map: texture });
+        const whiteboardGeometry = new THREE.PlaneGeometry(16, 8);
+        const whiteboard = new THREE.Mesh(whiteboardGeometry, whiteboardMaterial);
+        whiteboard.position.set(wx, 5, wz - 10); // backWall에 부착
+        scene.add(whiteboard);
+
+        return { canvas, context, texture, whiteboard };
+    }
+
+    const whiteboard = createWhiteboard(x, z);
+
+    // 강의실 정보 저장
+    classrooms.push({
+        whiteboard
+    });
+
 }
 
 // 4개의 강의실 생성
@@ -217,6 +288,31 @@ function animate() {
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
 
+
+    let characterNearWhiteboard = false;
+
+    classrooms.forEach(classroom => {
+        
+        for (const id in players) {
+            const player = players[id];
+            // 화이트보드 가까이 있는지 확인
+            if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
+                characterNearWhiteboard = true;
+                print(characterNearWhiteboard);
+                currentWhiteboard = classroom.whiteboard;
+            }
+            break;
+        }
+    });
+
+    // 화이트보드 가까이 있을 때 입력 창 표시
+    if (characterNearWhiteboard) {
+        inputBox.style.display = 'block';
+    } else {
+        inputBox.style.display = 'none';
+        currentWhiteboard = null;
+    }
+
     // 모든 캐릭터의 HP 바가 카메라를 향하도록 업데이트
     Object.values(players).forEach(player => {
         const bar = player.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
@@ -236,6 +332,7 @@ function animate() {
 
 }
 animate();
+
 
 // 창 크기 조절 대응
 window.addEventListener('resize', () => {
