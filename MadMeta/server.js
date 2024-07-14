@@ -55,6 +55,50 @@ wss.on('connection', (ws) => {
         }
       });
     }
+
+    // 공격 이벤트 처리
+    if (data.type === 'attack') {
+      Object.keys(clients).forEach(clientId => {
+        if (clients[clientId].readyState === WebSocket.OPEN) {
+          clients[clientId].send(JSON.stringify({
+            type: 'attack',
+            id: ws.id
+          }));
+        }
+      });
+    }
+
+    // 총 발사 이벤트 처리
+    if (data.type === 'shoot') {
+      Object.keys(clients).forEach(clientId => {
+        if (clients[clientId].readyState === WebSocket.OPEN) {
+          clients[clientId].send(JSON.stringify({
+            type: 'shoot',
+            id: ws.id
+          }));
+        }
+      });
+    }
+
+    // 데미지 이벤트 처리
+    if (data.type === 'damage') {
+      const targetClient = clients[data.targetId];
+      if (targetClient && states[data.targetId]) {
+        // HP 감소
+        states[data.targetId].hp = (states[data.targetId].hp || 100) - data.damage;
+
+        // 모든 클라이언트에게 브로드캐스트
+        Object.keys(clients).forEach(clientId => {
+          if (clients[clientId].readyState === WebSocket.OPEN) {
+            clients[clientId].send(JSON.stringify({
+              type: 'damage',
+              targetId: data.targetId,
+              damage: data.damage
+            }));
+          }
+        });
+      }
+    }
   });
 
   ws.on('close', () => {

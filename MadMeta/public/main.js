@@ -1,11 +1,15 @@
 // 씬, 카메라, 렌더러 초기화
 const scene = new THREE.Scene();
+
+// 카메라 설정
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 let cameraMode = 0; // 0: 현재 시점, 1: 1인칭 시점, 2: 3인칭 뒷통수 시점
 camera.position.set(0, 30, 100); // 카메라 위치를 변경하여 광장과 강의실을 모두 볼 수 있게 설정
 camera.lookAt(0, 0, 0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: false });
+
+// 렌더러 설정
+const renderer = new THREE.WebGLRenderer({ antialias: true }); // 안티앨리어싱을 켬
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -142,7 +146,7 @@ window.addEventListener('keydown', (event) => {
     keyState[event.code] = true;
 
     if (event.code === 'KeyQ') {
-        switchWeapon();
+        switchItem();
     }
 
     if (event.code === 'KeyV') {
@@ -157,6 +161,7 @@ window.addEventListener('keydown', (event) => {
         }
     }
 });
+
 
 window.addEventListener('keyup', (event) => {
     keyState[event.code] = false;
@@ -194,7 +199,7 @@ function followCharacter() {
         localCharacter.getWorldDirection(direction);
         camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.6, 0));
         camera.position.add(direction.multiplyScalar(0.5));
-        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(2)));
+        camera.lookAt(localCharacter.position.clone().add(direction.multiplyScalar(7)));
     } else if (cameraMode === 2) {
         // 3인칭 뒷통수 시점
         const direction = new THREE.Vector3();
@@ -212,8 +217,23 @@ function animate() {
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
 
+    // 모든 캐릭터의 HP 바가 카메라를 향하도록 업데이트
+    Object.values(players).forEach(player => {
+        const bar = player.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
+        if (bar) {
+            bar.lookAt(camera.position);
+        }
+    });
 
+    if (localCharacter) {
+        const localBar = localCharacter.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
+        if (localBar) {
+            localBar.lookAt(camera.position);
+        }
+    }
+    
     renderer.render(scene, camera);
+
 }
 animate();
 
