@@ -2,7 +2,7 @@ let bullets = [];
 const keyState = {};
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://172.20.30.71:8080');
+const ws = new WebSocket('ws://143.248.226.64:8080');
 
 ws.onopen = () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
@@ -14,7 +14,7 @@ ws.onopen = () => {
 
 ws.onmessage = (message) => {
     const data = JSON.parse(message.data);
-    console.log(data);
+    // console.log(data);
     if (data.type === 'init') {
         // 기존 플레이어 추가
         if (data.states) {
@@ -294,15 +294,15 @@ function updateBullets() {
         }
     });
 }
-function animate() {
-    requestAnimationFrame(animate);
-    moveCharacter();
-    followCharacter();
-    detectCharacterCollision();
-    updateBullets();
-    renderer.render(scene, camera);
+// function animate() {
+//     requestAnimationFrame(animate);
+//     moveCharacter();
+//     followCharacter();
+//     detectCharacterCollision();
+//     updateBullets();
+//     renderer.render(scene, camera);
 
-    sendUpdate(); // 캐릭터 위치 및 회전 정보를 서버로 전송
-}
+//     sendUpdate(); // 캐릭터 위치 및 회전 정보를 서버로 전송
+// }
 
-animate();
+// animate();
