@@ -5,13 +5,25 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 let cameraMode = 0; // 0: 현재 시점, 1: 1인칭 시점, 2: 3인칭 뒷통수 시점
 camera.position.set(0, 30, 100); // 카메라 위치를 변경하여 광장과 강의실을 모두 볼 수 있게 설정
-camera.lookAt(0, 0, 0);
+// camera.lookAt(0, 0, 0);
 
 
 // 렌더러 설정
 const renderer = new THREE.WebGLRenderer({ antialias: true }); // 안티앨리어싱을 켬
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// const controls = new THREE.OrbitControls(camera, renderer.domElement);
+// controls.listenToKeyEvents( window ); // optional
+// //controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
+
+// controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+// controls.dampingFactor = 0.05;
+// controls.screenSpacePanning = false;
+// controls.minDistance = 10;
+// controls.maxDistance = 500;
+// controls.maxPolarAngle = Math.PI / 2;
+
 
 const collisionObjects = [];
 
@@ -187,7 +199,7 @@ function createClassroom(x, z) {
         const whiteboardMaterial = new THREE.MeshBasicMaterial({ map: texture });
         const whiteboardGeometry = new THREE.PlaneGeometry(16, 8);
         const whiteboard = new THREE.Mesh(whiteboardGeometry, whiteboardMaterial);
-        whiteboard.position.set(wx, 5, wz - 10); // backWall에 부착
+        whiteboard.position.set(wx, 5, wz - 9); // backWall에 부착
         scene.add(whiteboard);
 
         return { canvas, context, texture, whiteboard };
@@ -294,7 +306,6 @@ function detectCharacterCollision() {
 // 카메라가 로컬 캐릭터를 따라가도록 설정
 function followCharacter() {
     if (!localCharacter) return;
-
     if (cameraMode === 0) {
         // 기본 시점
         camera.position.x = localCharacter.position.x;
@@ -315,6 +326,7 @@ function followCharacter() {
         camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.5, 0).sub(direction.multiplyScalar(2)));
         camera.lookAt(localCharacter.position);
     }
+    // controls.target.copy(localCharacter.position);
 }
 
 function animate() {
@@ -323,6 +335,7 @@ function animate() {
     followCharacter(); // 카메라가 로컬 캐릭터를 따라가도록 설정
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
+    // controls.update(); // OrbitControls 업데이트
 
     let characterNearWhiteboard = false;
 

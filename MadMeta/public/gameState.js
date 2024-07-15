@@ -1,5 +1,8 @@
 let bullets = [];
 const keyState = {};
+// const peerConnections = {};
+// const audioElements = {};
+// const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
