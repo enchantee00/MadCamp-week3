@@ -34,35 +34,67 @@ scene.add(floor);
 
 
 
-let inputBox, inputText, submitText;
+let inputBox, inputText, submitText, questionBox, confirmButton;
+let gameControlsEnabled = true;
+
 
 function init() {
     inputBox = document.getElementById('inputBox');
     inputText = document.getElementById('inputText');
     submitText = document.getElementById('submitText');
+    questionBox = document.getElementById('questionBox');
+    confirmButton = document.getElementById('confirmButton');
     
     submitText.addEventListener('click', () => {
         const text = inputText.value;
-        updateWhiteboardTexture(currentWhiteboard, text);
+        if (currentWhiteboard) {
+            updateWhiteboardTexture(currentWhiteboard, text);
+        }
         inputBox.style.display = 'none';
+        enableGameControls();
+    });
+
+    confirmButton.addEventListener('click', () => {
+        questionBox.style.display = 'none';
+        inputBox.style.display = 'block';
+        disableGameControls();
     });
 
     document.addEventListener('keydown', (event) => {
         if (inputBox.style.display === 'block') {
-            // 입력 창이 표시된 상태에서는 특정 키 입력을 무시
+            // 입력 상자가 표시된 상태에서는 특정 키 입력을 무시
+            disableGameControls();
             if (event.key === 'Enter') {
+                console.log('Enter')
                 const text = inputText.value;
                 if (currentWhiteboard) {
                     updateWhiteboardTexture(currentWhiteboard, text);
                 }
                 inputBox.style.display = 'none';
+                enableGameControls();
             } else if (event.key === 'Escape') {
+                console.log('escape');
                 inputBox.style.display = 'none';
+                enableGameControls();
+            } else if (event.key === 'Backspace') {
+                event.preventDefault(); // 기본 동작을 막음
+                inputText.value = inputText.value.slice(0, -1);
+            } else {
+                inputText.focus();
             }
-            event.preventDefault(); // 기본 동작을 막음
         }
+        // enableGameControls();
     });
 }
+
+function enableGameControls() {
+    gameControlsEnabled = true;
+}
+
+function disableGameControls() {
+    gameControlsEnabled = false;
+}
+
 
 init();
 
@@ -214,6 +246,8 @@ createFountain(0, 30);
 
 // 키보드 입력 처리
 window.addEventListener('keydown', (event) => {
+    if (!gameControlsEnabled) return; // 게임 컨트롤이 비활성화된 경우 이벤트 무시
+
     keyState[event.code] = true;
 
     if (event.code === 'KeyQ') {
@@ -235,6 +269,8 @@ window.addEventListener('keydown', (event) => {
 
 
 window.addEventListener('keyup', (event) => {
+    if (!gameControlsEnabled) return; // 게임 컨트롤이 비활성화된 경우 이벤트 무시
+
     keyState[event.code] = false;
 });
 
@@ -293,22 +329,23 @@ function animate() {
     classrooms.forEach(classroom => {
         Object.keys(players).forEach(id => {
             const player = players[id];
-            if (player && player.position) {
-                const distance = localCharacter.position.distanceTo(player.position);
-                if (distance < 5) {
-                    characterNearWhiteboard = true;
-                    currentWhiteboard = classroom.whiteboard;
-                }
+
+            // 화이트보드 가까이 있는지 확인
+            if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
+                characterNearWhiteboard = true;
+                currentWhiteboard = classroom.whiteboard;
             }
-        });
-    });
+            break;
+        }
+    });``
+
 
     // 화이트보드 가까이 있을 때 입력 창 표시
     if (characterNearWhiteboard) {
-        inputBox.style.display = 'block';
+        questionBox.style.display = 'block';
+
     } else {
-        inputBox.style.display = 'none';
-        currentWhiteboard = null;
+        questionBox.style.display = 'none';
     }
 
     // 모든 캐릭터의 HP 바가 카메라를 향하도록 업데이트

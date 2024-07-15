@@ -5,7 +5,8 @@ let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://localhost:8080');
+
+const ws = new WebSocket('ws://143.248.226.64:8080');
 
 ws.onopen = () => {
     console.log('WebSocket 연결이 열렸습니다.');
@@ -13,7 +14,7 @@ ws.onopen = () => {
 
 ws.onmessage = (message) => {
     const data = JSON.parse(message.data);
-    console.log(data);
+    // console.log(data);
     if (data.type === 'init') {
         // 기존 플레이어 추가 (현재 클라이언트 자신은 제외)
         if (data.states) {
@@ -385,4 +386,5 @@ function updatePlayerWeapon(player, weapon) {
 
     }
 }
+
 
