@@ -1,5 +1,6 @@
 let localCharacter = null; // 로컬 캐릭터 변수
 const players = {}; // 다른 플레이어들을 저장할 객체
+const items = {}; // 맵에 존재하는 아이템들을 저장할 객체
 let weapon = null;
 let gun = null;
 let currentWeapon = null;
@@ -143,6 +144,7 @@ function createWeapon(type, position) {
     weapon.position.copy(position);
     scene.add(weapon);
     weapon.updateWorldMatrix(true, false);
+    items[weapon.id] = { id: weapon.id, type, position };
     return weapon;
 }
 
@@ -173,9 +175,13 @@ function pickupItem(type) {
                 const rightArm = localCharacter.getObjectByName("rightArm");
                 if (rightArm) {
                     rightArm.add(item); // 오른팔에 무기 추가
-                    if(type=="sword"){                    item.position.set(0, -1, 0.4);} // 손 위치에 아이템 배치}
-                    else{item.position.set(0, -1, 0);} // 손 위치에 아이템 배치
+                    if (type == "sword") {
+                        item.position.set(0, -1, 0.4);
+                    } else {
+                        item.position.set(0, -1, 0);
+                    } // 손 위치에 아이템 배치
                     item.rotation.set(Math.PI / 2, 0, 0);
+                    ws.send(JSON.stringify({ type: 'itemPickup', itemId: item.id }));
                 } else {
                     console.error("오른팔을 찾을 수 없습니다.");
                 }
@@ -223,6 +229,7 @@ function switchItem() {
                     rightArm.add(newItem); // 오른팔에 무기 추가
                     newItem.position.set(0, -0.9, 0.5); // 손 위치에 아이템 배치
                     newItem.rotation.set(Math.PI / 2, 0, 0);
+                    ws.send(JSON.stringify({ type: 'itemPickup', itemId: newItem.id }));
                 } else {
                     console.error("오른팔을 찾을 수 없습니다.");
                 }
@@ -393,6 +400,7 @@ function shoot() {
             bullet.userData.startPosition = bullet.position.clone(); // 총알의 초기 위치 저장
 
             animateShootDown(); // 총을 쏜 후 팔을 내리는 애니메이션 시작
+            ws.send(JSON.stringify({ type: 'shoot', bulletId: bullet.id, position: bullet.position, velocity: bullet.userData.velocity }));
         };
 
         animateShootUp();
@@ -428,6 +436,7 @@ function moveCharacter() {
             localCharacter.position.sub(direction);
         } else {
             ws.send(JSON.stringify({
+                type: 'update',
                 id: ws.id,
                 position: {
                     x: localCharacter.position.x,
