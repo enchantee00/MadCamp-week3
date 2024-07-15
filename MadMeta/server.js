@@ -15,7 +15,7 @@ app.listen(port, '143.248.226.64', () => {
 });
 
 // WebSocket 서버 설정
-const wss = new WebSocket.Server({ port: 8080, host: 'localhost' });
+const wss = new WebSocket.Server({ port: 8080, host: '0.0.0.0' });
 
 let clients = {};
 let players = { // dummy 플레이어 추가
