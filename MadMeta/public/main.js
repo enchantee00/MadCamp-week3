@@ -329,7 +329,7 @@ function animate() {
     }
     
     renderer.render(scene, camera);
-
+    sendUpdate();
 }
 animate();
 

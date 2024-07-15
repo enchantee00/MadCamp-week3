@@ -1,8 +1,12 @@
 let bullets = [];
 const keyState = {};
 
+
+let lastPosition = new THREE.Vector3();
+let lastRotationY = 0;
+
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://172.20.30.71:8080');
+const ws = new WebSocket('ws://localhost:8080');
 
 ws.onopen = () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
@@ -79,19 +83,28 @@ ws.onclose = () => {
     });
 };
 
+
 function sendUpdate() {
     if (localCharacter) {
-        ws.send(JSON.stringify({
-            id: ws.id,
-            position: {
-                x: localCharacter.position.x,
-                y: localCharacter.position.y,
-                z: localCharacter.position.z
-            },
-            rotation: {
-                y: localCharacter.rotation.y
-            }
-        }));
+        const currentPosition = localCharacter.position;
+        const currentRotationY = localCharacter.rotation.y;
+
+        if (!currentPosition.equals(lastPosition) || currentRotationY !== lastRotationY) {
+            ws.send(JSON.stringify({
+                id: ws.id,
+                position: {
+                    x: currentPosition.x,
+                    y: currentPosition.y,
+                    z: currentPosition.z
+                },
+                rotation: {
+                    y: currentRotationY
+                }
+            }));
+
+            lastPosition.copy(currentPosition);
+            lastRotationY = currentRotationY;
+        }
     }
 }
 
@@ -294,15 +307,4 @@ function updateBullets() {
         }
     });
 }
-function animate() {
-    requestAnimationFrame(animate);
-    moveCharacter();
-    followCharacter();
-    detectCharacterCollision();
-    updateBullets();
-    renderer.render(scene, camera);
 
-    sendUpdate(); // 캐릭터 위치 및 회전 정보를 서버로 전송
-}
-
-animate();

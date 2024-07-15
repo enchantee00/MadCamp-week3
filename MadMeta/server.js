@@ -8,12 +8,12 @@ const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.listen(port, '172.20.30.71', () => {
+app.listen(port, 'localhost', () => {
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
 
 // WebSocket 서버 설정
-const wss = new WebSocket.Server({ port: 8080, host: '0.0.0.0' });
+const wss = new WebSocket.Server({ port: 8080, host: 'localhost' });
 
 let clients = {};
 let states = {};
