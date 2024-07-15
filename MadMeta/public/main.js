@@ -278,7 +278,7 @@ window.addEventListener('keyup', (event) => {
 function detectCharacterCollision() {
     if (localCharacter) {
         const localBox = new THREE.Box3().setFromObject(localCharacter);
-        for (const id in players) {
+        Object.keys(players).forEach(id => {
             const player = players[id];
             if (player) {
                 const playerBox = new THREE.Box3().setFromObject(player);
@@ -286,9 +286,10 @@ function detectCharacterCollision() {
                     // console.log('충돌!');
                 }
             }
-        }
+        });
     }
 }
+
 
 // 카메라가 로컬 캐릭터를 따라가도록 설정
 function followCharacter() {
@@ -316,7 +317,6 @@ function followCharacter() {
     }
 }
 
-// 애니메이션 루프
 function animate() {
     requestAnimationFrame(animate);
     moveCharacter(); // 로컬 캐릭터 이동
@@ -324,13 +324,12 @@ function animate() {
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
 
-
     let characterNearWhiteboard = false;
 
     classrooms.forEach(classroom => {
-        
-        for (const id in players) {
+        Object.keys(players).forEach(id => {
             const player = players[id];
+
             // 화이트보드 가까이 있는지 확인
             if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
                 characterNearWhiteboard = true;
@@ -339,6 +338,7 @@ function animate() {
             break;
         }
     });``
+
 
     // 화이트보드 가까이 있을 때 입력 창 표시
     if (characterNearWhiteboard) {
@@ -362,11 +362,11 @@ function animate() {
             localBar.lookAt(camera.position);
         }
     }
-    
+
     renderer.render(scene, camera);
     sendUpdate();
-
 }
+
 animate();
 
 

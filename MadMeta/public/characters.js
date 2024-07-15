@@ -1,5 +1,5 @@
 let localCharacter = null; // 로컬 캐릭터 변수
-const players = {}; // 다른 플레이어들을 저장할 객체
+const players = {}; // 모든 플레이어들을 저장할 객체
 let weapon = null;
 let gun = null;
 let currentWeapon = null;
@@ -29,7 +29,7 @@ function updateHPBar(character) {
 }
 
 // 캐릭터 추가 함수
-function createCharacter(id, isLocal = false) {
+function createCharacter(id,isLocal = false) {
     const character = new THREE.Group();
 
     // 몸통 추가
@@ -113,122 +113,64 @@ function createCharacter(id, isLocal = false) {
     textSprite.position.set(0, 2.0, 0); // HP 바 위에 텍스트 위치
     character.add(textSprite);
 
-    if (isLocal) {
-        character.position.set(6, 0.6, -8); // 로컬 캐릭터 초기 위치 설정
-    } else {
-        character.position.set(4, 0.6, -8); // 더미 캐릭터 위치 설정
-    }
     scene.add(character);
     character.updateWorldMatrix(true, false);
 
+    // 로컬 캐릭터와 플레이어 구분
     if (isLocal) {
         localCharacter = character;
-    } else {
-        players[id] = character;
     }
+    // } else {
+    players[id] = character;
+    if (players[id].weapon) {
+        updatePlayerWeapon(character, players[id].weapon);
+    }
+    
+
+
     return character;
 }
 
-// 무기 생성 함수
-function createWeapon(type, position) {
-    let weaponGeometry, weaponMaterial;
+// 아이템 생성 함수
+function createItem(itemId, type, position) {
+    let itemGeometry, itemMaterial;
     if (type === 'sword') {
-        weaponGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
-        weaponMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        itemGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+        itemMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     } else if (type === 'gun') {
-        weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
-        weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        itemGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
+        itemMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
     }
-    const weapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
-    weapon.position.copy(position);
-    scene.add(weapon);
-    weapon.updateWorldMatrix(true, false);
-    return weapon;
+    const item = new THREE.Mesh(itemGeometry, itemMaterial);
+    item.position.set(position.x, position.y, position.z);
+    item.itemId = itemId;
+    scene.add(item);
+    return item;
 }
+function pickUpItem(itemId) {
+    ws.send(JSON.stringify({
+        type: 'pickup',
+        itemId: itemId,
+        playerId: ws.id
+    }));
+}
+// 아이템 접근 감지 및 서버로 전송
+function detectItemPickup() {
+    if (!localCharacter) return;
 
-// 아이템 획득 함수
-function pickupItem(type) {
-    if (localCharacter && !currentWeapon) {
-        let item = null;
+    // 로컬 캐릭터의 박스를 가져옵니다.
+    const localBox = new THREE.Box3().setFromObject(localCharacter);
 
-        if (type === 'sword' && weapon) {
-            item = weapon;
-        } else if (type === 'gun' && gun) {
-            item = gun;
-        }
-
-        if (item) {
-            item.updateWorldMatrix(true, false);
-            const itemBox = new THREE.Box3().setFromObject(item);
-            const characterBox = new THREE.Box3().setFromObject(localCharacter);
-
-            if (itemBox.intersectsBox(characterBox)) {
-                console.log(`${type} 획득!`);
-                if (type === 'sword') {
-                    hasWeapon = true;
-                } else if (type === 'gun') {
-                    hasGun = true;
-                }
-                currentWeapon = item;
-                const rightArm = localCharacter.getObjectByName("rightArm");
-                if (rightArm) {
-                    rightArm.add(item); // 오른팔에 무기 추가
-                    if(type=="sword"){                    item.position.set(0, -1, 0.4);} // 손 위치에 아이템 배치}
-                    else{item.position.set(0, -1, 0);} // 손 위치에 아이템 배치
-                    item.rotation.set(Math.PI / 2, 0, 0);
-                } else {
-                    console.error("오른팔을 찾을 수 없습니다.");
-                }
+    // 씬에 있는 모든 아이템을 검사합니다.
+    scene.children.forEach(child => {
+        if (child.itemId) {
+            const itemBox = new THREE.Box3().setFromObject(child);
+            if (localBox.intersectsBox(itemBox)) {
+                // 아이템을 주웠음을 서버에 알립니다.
+                pickUpItem(child.itemId);
             }
         }
-    }
-}
-
-// 아이템 교체 함수
-function switchItem() {
-    if (localCharacter && currentWeapon) {
-        let newItem = null;
-        if (hasWeapon && gun) {
-            newItem = gun;
-        } else if (hasGun && weapon) {
-            newItem = weapon;
-        }
-
-        if (newItem) {
-            newItem.updateWorldMatrix(true, false);
-            const itemBox = new THREE.Box3().setFromObject(newItem);
-            const characterBox = new THREE.Box3().setFromObject(localCharacter);
-
-            if (itemBox.intersectsBox(characterBox)) {
-                console.log('아이템 교체!');
-
-                // 현재 무기를 내려놓고
-                currentWeapon.position.copy(localCharacter.position);
-                currentWeapon.position.y = 0.5; // 무기를 바닥에 놓기
-                currentWeapon.rotation.set(0, 0, 0);
-                scene.add(currentWeapon);
-
-                // 새 무기를 획득
-                if (newItem === gun) {
-                    hasWeapon = false;
-                    hasGun = true;
-                } else if (newItem === weapon) {
-                    hasWeapon = true;
-                    hasGun = false;
-                }
-                currentWeapon = newItem;
-
-                const rightArm = localCharacter.getObjectByName("rightArm");
-                if (rightArm) {
-                    rightArm.add(newItem); // 오른팔에 무기 추가
-                    newItem.position.set(0, -0.9, 0.5); // 손 위치에 아이템 배치
-                    newItem.rotation.set(Math.PI / 2, 0, 0);
-                } else {
-                    console.error("오른팔을 찾을 수 없습니다.");
-                }
-            }
-        }
-    }
+    });
 }
 
 // 무기 공격 함수
@@ -453,6 +395,6 @@ function moveCharacter() {
         if (rightArm) rightArm.rotation.x = walkCycle;
     }
 
-    pickupItem('sword'); // 무기 획득 시도
-    pickupItem('gun'); // 총 획득 시도
+    // 아이템 접근 감지
+    detectItemPickup();
 }
