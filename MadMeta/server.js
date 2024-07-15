@@ -16,103 +16,97 @@ app.listen(port, 'localhost', () => {
 const wss = new WebSocket.Server({ port: 8080, host: 'localhost' });
 
 let clients = {};
-let states = {};
+let players = {}; // 플레이어 정보를 저장하는 객체로 변경
+
+// 모든 클라이언트에게 메시지를 브로드캐스트하는 함수
+function broadcast(message, excludeId) {
+  Object.keys(clients).forEach(clientId => {
+    if (clients[clientId].readyState === WebSocket.OPEN && clientId !== excludeId) {
+      clients[clientId].send(message);
+    }
+  });
+}
 
 wss.on('connection', (ws) => {
-  const id = Date.now();
+  const id = Date.now(); // TODO: login 로직
   ws.id = id;
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보 전달
-  ws.send(JSON.stringify({ type: 'init', states }));
+  ws.send(JSON.stringify({ type: 'init', states: players }));
 
-  // 기존 클라이언트에게 새로운 클라이언트 정보 전달
-  Object.keys(clients).forEach(clientId => {
-    if (clientId != id) {
-      clients[clientId].send(JSON.stringify({ type: 'newPlayer', id }));
-    }
-  });
+  // 새로운 플레이어 정보를 players 객체에 추가
+  players[id] = {
+    id: id,
+    hp: 100,
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { y: 0 },
+    weapon: null // 초기 무기 정보
+  };
 
   // 새로운 클라이언트에게 확인 메시지 전송
   ws.send(JSON.stringify({ type: 'connected', id }));
+
+  // 기존 클라이언트에게 새로운 클라이언트 정보 전달
+  broadcast(JSON.stringify({ type: 'newPlayer', id }), id);
 
   ws.on('message', (message) => {
     const data = JSON.parse(message);
 
     // 클라이언트 상태 업데이트
     if (data.position && data.rotation) {
-      states[ws.id] = {
+      players[ws.id] = {
+        ...players[ws.id],
         position: data.position,
-        rotation: data.rotation,
-        hp: states[ws.id]?.hp || 100 // 초기 hp 설정
+        rotation: data.rotation
       };
 
       // 모든 클라이언트에게 브로드캐스트
-      Object.keys(clients).forEach(clientId => {
-        if (clients[clientId].readyState === WebSocket.OPEN) {
-          clients[clientId].send(JSON.stringify({
-            type: 'update',
-            id: ws.id,
-            position: data.position,
-            rotation: data.rotation
-          }));
-        }
-      });
+      broadcast(JSON.stringify({
+        type: 'update',
+        id: ws.id,
+        position: data.position,
+        rotation: data.rotation
+      }));
     }
 
     // 공격 이벤트 처리
     if (data.type === 'attack') {
-      Object.keys(clients).forEach(clientId => {
-        if (clients[clientId].readyState === WebSocket.OPEN) {
-          clients[clientId].send(JSON.stringify({
-            type: 'attack',
-            id: ws.id
-          }));
-        }
-      });
+      broadcast(JSON.stringify({
+        type: 'attack',
+        id: ws.id
+      }));
     }
 
     // 총 발사 이벤트 처리
     if (data.type === 'shoot') {
-      Object.keys(clients).forEach(clientId => {
-        if (clients[clientId].readyState === WebSocket.OPEN) {
-          clients[clientId].send(JSON.stringify({
-            type: 'shoot',
-            id: ws.id
-          }));
-        }
-      });
+      broadcast(JSON.stringify({
+        type: 'shoot',
+        id: ws.id
+      }));
     }
 
     // 데미지 이벤트 처리
     if (data.type === 'damage') {
       const targetClient = clients[data.targetId];
-      if (targetClient && states[data.targetId]) {
+      if (targetClient && players[data.targetId]) {
         // HP 감소
-        states[data.targetId].hp = (states[data.targetId].hp || 100) - data.damage;
+        players[data.targetId].hp = (players[data.targetId].hp || 100) - data.damage;
 
         // 모든 클라이언트에게 브로드캐스트
-        Object.keys(clients).forEach(clientId => {
-          if (clients[clientId].readyState === WebSocket.OPEN) {
-            clients[clientId].send(JSON.stringify({
-              type: 'damage',
-              targetId: data.targetId,
-              damage: data.damage
-            }));
-          }
-        });
+        broadcast(JSON.stringify({
+          type: 'damage',
+          targetId: data.targetId,
+          damage: data.damage
+        }));
       }
     }
   });
 
   ws.on('close', () => {
     delete clients[id];
-    delete states[id];
-    Object.keys(clients).forEach(clientId => {
-      if (clients[clientId].readyState === WebSocket.OPEN) {
-        clients[clientId].send(JSON.stringify({ type: 'removePlayer', id }));
-      }
-    });
+    delete players[id]; // players 객체에서 플레이어 정보 삭제
+    broadcast(JSON.stringify({ type: 'removePlayer', id }));
   });
 });
 

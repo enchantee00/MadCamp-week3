@@ -15,15 +15,17 @@ ws.onmessage = (message) => {
     const data = JSON.parse(message.data);
     console.log(data);
     if (data.type === 'init') {
-        // 기존 플레이어 추가
+        // 기존 플레이어 추가 (현재 클라이언트 자신은 제외)
         if (data.states) {
             Object.keys(data.states).forEach(clientId => {
                 const state = data.states[clientId];
-                const character = createCharacter(clientId);
-                character.position.set(state.position.x, state.position.y, state.position.z);
-                character.rotation.y = state.rotation.y;
-                character.hp = state.hp || 100; // 초기 hp 설정
-                updateHPBar(character);
+                if (clientId != ws.id) {  // 자신의 캐릭터는 제외
+                    const character = createCharacter(clientId);
+                    character.position.set(state.position.x, state.position.y, state.position.z);
+                    character.rotation.y = state.rotation.y;
+                    character.hp = state.hp || 100; // 초기 hp 설정
+                    updateHPBar(character);
+                }
             });
         }
     } else if (data.type === 'connected') {
@@ -34,8 +36,10 @@ ws.onmessage = (message) => {
         weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
         gun = createWeapon('gun', new THREE.Vector3(8, 0.5, -6)); // 총 생성
     } else if (data.type === 'newPlayer') {
-        // 새로운 플레이어 추가
+        // 새로운 플레이어 추가(내가 아닌 newPlayer만)
+        if (data.id != ws.id){
         createCharacter(data.id);
+        }
     } else if (data.type === 'removePlayer') {
         // 플레이어 제거
         const player = players[data.id];
