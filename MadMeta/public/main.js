@@ -287,20 +287,20 @@ window.addEventListener('keyup', (event) => {
 });
 
 // 캐릭터 간 충돌 감지 함수
-function detectCharacterCollision() {
-    if (localCharacter) {
-        const localBox = new THREE.Box3().setFromObject(localCharacter);
-        for (const id in players) {
-            const player = players[id];
-            if (player) {
-                const playerBox = new THREE.Box3().setFromObject(player);
-                if (localBox.intersectsBox(playerBox)) {
-                    // console.log('충돌!');
-                }
-            }
-        }
-    }
-}
+// function detectCharacterCollision() {
+//     if (localCharacter) {
+//         const localBox = new THREE.Box3().setFromObject(localCharacter);
+//         for (const id in players) {
+//             const player = players[id];
+//             if (player) {
+//                 const playerBox = new THREE.Box3().setFromObject(player);
+//                 if (localBox.intersectsBox(playerBox)) {
+//                     // console.log('충돌!');
+//                 }
+//             }
+//         }
+//     }
+// }
 
 // 카메라가 로컬 캐릭터를 따라가도록 설정
 function followCharacter() {
@@ -340,18 +340,24 @@ function animate() {
 
     let characterNearWhiteboard = false;
 
+    
     classrooms.forEach(classroom => {
-        
+    
         for (const id in players) {
             const player = players[id];
-            // 화이트보드 가까이 있는지 확인
-            if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
-                characterNearWhiteboard = true;
-                currentWhiteboard = classroom.whiteboard;
+
+            if(localCharacter && player) {
+                // 화이트보드 가까이 있는지 확인
+                if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
+                    characterNearWhiteboard = true;
+                    currentWhiteboard = classroom.whiteboard;
+                }
+                break;
             }
-            break;
         }
     });
+    
+
 
     // 화이트보드 가까이 있을 때 입력 창 표시
     if (characterNearWhiteboard) {

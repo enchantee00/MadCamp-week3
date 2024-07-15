@@ -1,19 +1,28 @@
 const express = require('express');
+const https = require('https');
 const path = require('path');
 const WebSocket = require('ws');
+const fs = require('fs');
 
 // Express 앱 설정
 const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+const options = {
+  key: fs.readFileSync('rootca.key'),
+  cert: fs.readFileSync('rootca.crt')
+};
 
-app.listen(port, '143.248.226.64', () => {
-  console.log(`Web server is running on http://0.0.0.0:${port}`);
+app.use(express.static(path.join(__dirname, 'public')));
+const server = https.createServer(options, app);
+const wss = new WebSocket.Server({ server });
+
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Web server is running on https://0.0.0.0:${port}`);
 });
 
 // WebSocket 서버 설정
-const wss = new WebSocket.Server({ port: 8080, host: '0.0.0.0' });
+
 
 let clients = {};
 let states = {};

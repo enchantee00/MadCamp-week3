@@ -1,14 +1,20 @@
 let bullets = [];
 const keyState = {};
-// const peerConnections = {};
-// const audioElements = {};
-// const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const peerConnections = {};
+const audioElements = {};
+let localStream = null;
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.64:8080');
+const ws = new WebSocket('wss://143.248.226.64:3000');
 
-ws.onopen = () => {
+ws.onopen = async () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); // 로컬 오디오 스트림
+        initAudioDetection(localStream); // 음성 감지 초기화
+    } else {
+        throw new Error("getUserMedia is not supported in this browser");
+    }    
     createCharacter(ws.id, true); // 로컬 캐릭터 생성
     createCharacter('dummy'); // 더미 캐릭터 생성
     weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
@@ -33,6 +39,7 @@ ws.onmessage = (message) => {
     } else if (data.type === 'newPlayer') {
         // 새로운 플레이어 추가
         createCharacter(data.id);
+        setupPeerConnection(data.id, true);
     } else if (data.type === 'removePlayer') {
         // 플레이어 제거
         const player = players[data.id];
@@ -40,6 +47,7 @@ ws.onmessage = (message) => {
             scene.remove(player);
             delete players[data.id];
         }
+        removePeerConnection(data.id);
     } else if (data.type === 'update') {
         // 플레이어 위치 및 회전 업데이트
         let player = players[data.id];
@@ -72,7 +80,14 @@ ws.onmessage = (message) => {
         if (shooter) {
             performShoot(shooter);
         }
+    } else if (data.type === 'offer') {
+        handleOffer(data.offer, data.id);
+    } else if (data.type === 'answer') {
+        handleAnswer(data.answer, data.id);
+    } else if (data.type === 'candidate') {
+        handleCandidate(data.candidate, data.id);
     }
+
 };
 
 ws.onclose = () => {
@@ -111,6 +126,114 @@ function sendShoot() {
         id: ws.id
     }));
 }
+
+function setupPeerConnection(id, createOffer) {
+    const pc = new RTCPeerConnection({
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+        ]
+    });
+
+    peerConnections[id] = pc;
+    audioElements[id] = document.createElement('audio');
+    document.body.appendChild(audioElements[id]);
+
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+    pc.ontrack = (event) => {
+        console.log("수신");
+        audioElements[id].srcObject = event.streams[0];
+        audioElements[id].play();
+    };
+
+    pc.onicecandidate = (event) => {
+        if (event.candidate) {
+            ws.send(JSON.stringify({
+                type: 'candidate',
+                candidate: event.candidate,
+                id: id
+            }));
+        }
+    };
+
+    if (createOffer) {
+        pc.createOffer().then(offer => {
+            return pc.setLocalDescription(offer);
+        }).then(() => {
+            ws.send(JSON.stringify({
+                type: 'offer',
+                offer: pc.localDescription,
+                id: id
+            }));
+        });
+    }
+}
+
+function handleOffer(offer, id) {
+    const pc = setupPeerConnection(id, false);
+    pc.setRemoteDescription(new RTCSessionDescription(offer)).then(() => {
+        return pc.createAnswer();
+    }).then(answer => {
+        return pc.setLocalDescription(answer);
+    }).then(() => {
+        ws.send(JSON.stringify({
+            type: 'answer',
+            answer: pc.localDescription,
+            id: id
+        }));
+    });
+}
+
+function handleAnswer(answer, id) {
+    const pc = peerConnections[id];
+    pc.setRemoteDescription(new RTCSessionDescription(answer));
+}
+
+function handleCandidate(candidate, id) {
+    const pc = peerConnections[id];
+    pc.addIceCandidate(new RTCIceCandidate(candidate));
+}
+
+function removePeerConnection(id) {
+    if (peerConnections[id]) {
+        peerConnections[id].close();
+        delete peerConnections[id];
+    }
+    if (audioElements[id]) {
+        document.body.removeChild(audioElements[id]);
+        delete audioElements[id];
+    }
+}
+
+// 음성 감지 초기화 함수
+function initAudioDetection(stream) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const microphone = audioContext.createMediaStreamSource(stream);
+    const javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+    analyser.smoothingTimeConstant = 0.3;
+    analyser.fftSize = 1024;
+
+    microphone.connect(analyser);
+    analyser.connect(javascriptNode);
+    javascriptNode.connect(audioContext.destination);
+
+    javascriptNode.onaudioprocess = function () {
+        const array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(array);
+        let values = 0;
+
+        for (let i = 0; i < array.length; i++) {
+            values += array[i];
+        }
+
+        const average = values / array.length;
+
+        console.log("Current volume: " + average);
+    }
+}
+
 
 // 이 함수는 캐릭터가 공격을 수행하는 로직을 실행합니다.
 function performAttack(attacker) {
