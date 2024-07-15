@@ -279,7 +279,7 @@ function followCharacter() {
         camera.lookAt(localCharacter.position);
     }
 }
-
+/*오류를 찾아라!*/ 
 // 애니메이션 루프
 function animate() {
     requestAnimationFrame(animate);
