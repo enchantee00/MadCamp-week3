@@ -19,26 +19,35 @@ ws.onmessage = (message) => {
         if (data.states) {
             Object.keys(data.states).forEach(clientId => {
                 const state = data.states[clientId];
-                if (clientId != ws.id) {  // 자신의 캐릭터는 제외
+                if (clientId !== ws.id) {
                     const character = createCharacter(clientId);
                     character.position.set(state.position.x, state.position.y, state.position.z);
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
+                players[clientId] = character;  // 여기서 character 객체 추가
+
                 }
+
+            });
+        }
+
+        // 아이템 추가
+        if (data.items) {
+            Object.keys(data.items).forEach(itemId => {
+                const item = data.items[itemId];
+                createItem(itemId, item.type, item.position);
             });
         }
     } else if (data.type === 'connected') {
         // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
         ws.id = data.id;
-        createCharacter(ws.id, true); // 로컬 캐릭터 생성
-        createCharacter('dummy'); // 더미 캐릭터 생성
-        weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
-        gun = createWeapon('gun', new THREE.Vector3(8, 0.5, -6)); // 총 생성
+        createCharacter(ws.id,true); // 로컬 캐릭터 생성
+        // console.log("gameState: data->connected");
     } else if (data.type === 'newPlayer') {
-        // 새로운 플레이어 추가(내가 아닌 newPlayer만)
-        if (data.id != ws.id){
-        createCharacter(data.id);
+        // 새로운 플레이어 추가 (현재 클라이언트 자신은 제외)
+        if (data.id !== ws.id) {
+            createCharacter(data.id);
         }
     } else if (data.type === 'removePlayer') {
         // 플레이어 제거
@@ -79,8 +88,20 @@ ws.onmessage = (message) => {
         if (shooter) {
             performShoot(shooter);
         }
+    } else if (data.type === 'itemRemoved') {
+        // 아이템 제거 이벤트 처리
+        removeItemFromScene(data.itemId);
+    } else if (data.type === 'playerWeaponUpdate') {
+        // 플레이어 무기 상태 업데이트
+        const player = players[data.playerId];
+        if (player) {
+            player.weapon = data.weapon;
+            updatePlayerWeapon(player, data.weapon);
+            console.log(`Player ${data.playerId} weapon updated to ${data.weapon}`);
+        }
     }
 };
+
 
 ws.onclose = () => {
     Object.keys(players).forEach(id => {
@@ -126,6 +147,8 @@ function sendShoot() {
         id: ws.id
     }));
 }
+
+
 
 // 이 함수는 캐릭터가 공격을 수행하는 로직을 실행합니다.
 function performAttack(attacker) {
@@ -312,3 +335,54 @@ function updateBullets() {
         }
     });
 }
+
+function createItem(itemId, type, position) {
+    let itemGeometry, itemMaterial;
+    if (type === 'sword') {
+        itemGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+        itemMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    } else if (type === 'gun') {
+        itemGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
+        itemMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    }
+    const item = new THREE.Mesh(itemGeometry, itemMaterial);
+    item.position.set(position.x, position.y, position.z);
+    item.itemId = itemId;
+    scene.add(item);
+    return item;
+}
+
+function removeItemFromScene(itemId) {
+    const item = scene.children.find(obj => obj.itemId === itemId);
+    if (item) {
+        scene.remove(item);
+    }
+}
+
+// 무기 업데이트 함수
+function updatePlayerWeapon(player, weapon) {
+    const rightArm = player.getObjectByName("rightArm");
+    if (rightArm) {
+        // 기존 무기를 제거
+        const existingWeapon = rightArm.children.find(child => child.isMesh);
+        if (existingWeapon) {
+            rightArm.remove(existingWeapon);
+        }
+        // 새로운 무기를 추가
+        let weaponGeometry, weaponMaterial;
+        if (weapon === 'sword') {
+            weaponGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+            weaponMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        } else if (weapon === 'gun') {
+            weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
+            weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        }
+        const newWeapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
+        rightArm.add(newWeapon);
+        newWeapon.position.set(0, -1, 0.4); // 손 위치에 아이템 배치
+        newWeapon.rotation.set(Math.PI / 2, 0, 0);
+        console.log(`Weapon ${weapon} added to player ${player.id}'s hand`);
+
+    }
+}
+
