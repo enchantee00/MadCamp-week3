@@ -305,7 +305,6 @@ function detectCharacterCollision() {
 // 카메라가 로컬 캐릭터를 따라가도록 설정
 function followCharacter() {
     if (!localCharacter) return;
-
     if (cameraMode === 0) {
         // 기본 시점
         camera.position.x = localCharacter.position.x;
@@ -326,7 +325,6 @@ function followCharacter() {
         camera.position.copy(localCharacter.position).add(new THREE.Vector3(0, 1.5, 0).sub(direction.multiplyScalar(2)));
         camera.lookAt(localCharacter.position);
     }
-
     // controls.target.copy(localCharacter.position);
 }
 
@@ -353,7 +351,7 @@ function animate() {
             }
             break;
         }
-    });``
+    });
 
     // 화이트보드 가까이 있을 때 입력 창 표시
     if (characterNearWhiteboard) {

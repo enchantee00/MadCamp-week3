@@ -1,8 +1,8 @@
 let bullets = [];
 const keyState = {};
-const peerConnections = {};
-const audioElements = {};
-const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+// const peerConnections = {};
+// const audioElements = {};
+// const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
 // WebSocket 연결 설정
 const ws = new WebSocket('ws://143.248.226.64:8080');
