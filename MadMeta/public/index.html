@@ -6,7 +6,7 @@
     <style>
         body { margin: 0; }
         canvas { display: block; }
-        #inputBox, #questionBox {
+        #inputBox, #questionBox, #nameBox {
             display: none;
             position: fixed;
             top: 50%;
@@ -27,7 +27,7 @@
             border: 1px solid #ccc;
             box-sizing: border-box;
         }
-        #inputBox button, #questionBox button {
+        #inputBox button, #questionBox button, #nameBox button {
             margin-top: 10px;
             padding: 10px 20px;
             background-color: #28a745;
@@ -36,7 +36,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        #inputBox button:hover, #questionBox button:hover {
+        #inputBox button:hover, #questionBox button:hover, #nameBox button:hover {
             background-color: #218838;
         }
         #questionBox p {
@@ -53,6 +53,11 @@
     <div id="inputBox">
         <textarea id="inputText" rows="4" cols="50"></textarea><br>
         <button id="submitText">Submit</button>
+    </div>
+    <div id="nameBox">
+        <p>이름을 입력하세요:</p>
+        <input type="text" id="nameInput"><br>
+        <button id="nameSubmit">Submit</button>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
