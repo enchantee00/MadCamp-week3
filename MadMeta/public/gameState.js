@@ -1,7 +1,6 @@
 let bullets = [];
 const keyState = {};
 
-
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
 
@@ -9,11 +8,7 @@ let lastRotationY = 0;
 const ws = new WebSocket('ws://localhost:8080');
 
 ws.onopen = () => {
-    ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
-    createCharacter(ws.id, true); // 로컬 캐릭터 생성
-    createCharacter('dummy'); // 더미 캐릭터 생성
-    weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
-    gun = createWeapon('gun', new THREE.Vector3(8, 0.5, -6)); // 총 생성
+    console.log('WebSocket 연결이 열렸습니다.');
 };
 
 ws.onmessage = (message) => {
@@ -31,6 +26,13 @@ ws.onmessage = (message) => {
                 updateHPBar(character);
             });
         }
+    } else if (data.type === 'connected') {
+        // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
+        ws.id = data.id;
+        createCharacter(ws.id, true); // 로컬 캐릭터 생성
+        createCharacter('dummy'); // 더미 캐릭터 생성
+        weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
+        gun = createWeapon('gun', new THREE.Vector3(8, 0.5, -6)); // 총 생성
     } else if (data.type === 'newPlayer') {
         // 새로운 플레이어 추가
         createCharacter(data.id);
@@ -82,7 +84,6 @@ ws.onclose = () => {
         delete players[id];
     });
 };
-
 
 function sendUpdate() {
     if (localCharacter) {
@@ -307,4 +308,3 @@ function updateBullets() {
         }
     });
 }
-

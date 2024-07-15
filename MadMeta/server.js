@@ -33,6 +33,9 @@ wss.on('connection', (ws) => {
     }
   });
 
+  // 새로운 클라이언트에게 확인 메시지 전송
+  ws.send(JSON.stringify({ type: 'connected', id }));
+
   ws.on('message', (message) => {
     const data = JSON.parse(message);
 
