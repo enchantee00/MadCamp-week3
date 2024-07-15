@@ -3,7 +3,7 @@ const players = {}; // 모든 플레이어들을 저장할 객체
 let weapon = null;
 let gun = null;
 let currentWeapon = null;
-let hasWeapon = false;
+let hasSword = false;
 let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
@@ -175,173 +175,177 @@ function detectItemPickup() {
 
 // 무기 공격 함수
 function attack() {
-    if (!hasWeapon || isAttacking) {
-        console.log('무기가 없거나 공격 중입니다!');
+    if (!hasSword ) {
+        console.log("hasSword:",hasSword,'무기가 없거나 공격 중입니다!');
+        console.log(isAttacking);
         return;
     }
 
-    isAttacking = true; // 공격 애니메이션 시작
+    // isAttacking = true; // 공격 애니메이션 시작
+    sendAttack(localCharacter);
 
-    // 무기 휘두르기 애니메이션
-    if (currentWeapon) {
-        const rightArm = localCharacter.getObjectByName("rightArm");
-        if (rightArm) {
-            const originalRotation = rightArm.rotation.x;
-            const attackMotion = { x: 0 };
-            const swingUpSpeed = 0.2; // 팔을 올리는 속도
-            const swingDownSpeed = 0.3; // 팔을 내리는 속도
-            const maxSwing = 2 * Math.PI / 3; // 120도
-            let hitDetected = false; // 히트 감지를 위한 변수
+    // // 무기 휘두르기 애니메이션
+    // if (currentWeapon) {
+    //     const rightArm = localCharacter.getObjectByName("rightArm");
+    //     if (rightArm) {
+    //         const originalRotation = rightArm.rotation.x;
+    //         const attackMotion = { x: 0 };
+    //         const swingUpSpeed = 0.2; // 팔을 올리는 속도
+    //         const swingDownSpeed = 0.3; // 팔을 내리는 속도
+    //         const maxSwing = 2 * Math.PI / 3; // 120도
+    //         let hitDetected = false; // 히트 감지를 위한 변수
 
-            const animateSwingUp = () => {
-                rightArm.rotation.x = originalRotation - attackMotion.x;
-                if (attackMotion.x < maxSwing) {
-                    attackMotion.x += swingUpSpeed;
-                    requestAnimationFrame(animateSwingUp);
-                } else {
-                    setTimeout(animateSwingDown, 50); // 잠시 멈춘 후 내려오는 애니메이션 시작
-                }
-            };
+    //         const animateSwingUp = () => {
+    //             rightArm.rotation.x = originalRotation - attackMotion.x;
+    //             if (attackMotion.x < maxSwing) {
+    //                 attackMotion.x += swingUpSpeed;
+    //                 requestAnimationFrame(animateSwingUp);
+    //             } else {
+    //                 setTimeout(animateSwingDown, 50); // 잠시 멈춘 후 내려오는 애니메이션 시작
+    //             }
+    //         };
 
-            const animateSwingDown = () => {
-                rightArm.rotation.x = originalRotation - attackMotion.x;
-                if (attackMotion.x > 0) {
-                    attackMotion.x -= swingDownSpeed;
-                    requestAnimationFrame(animateSwingDown);
-                } else {
-                    rightArm.rotation.x = originalRotation;
-                    isAttacking = false; // 공격 애니메이션 종료
-                }
-            };
+    //         const animateSwingDown = () => {
+    //             rightArm.rotation.x = originalRotation - attackMotion.x;
+    //             if (attackMotion.x > 0) {
+    //                 attackMotion.x -= swingDownSpeed;
+    //                 requestAnimationFrame(animateSwingDown);
+    //             } else {
+    //                 rightArm.rotation.x = originalRotation;
+    //                 isAttacking = false; // 공격 애니메이션 종료
+    //             }
+    //         };
 
-            // 공격 범위 설정 (칼을 휘두르는 궤적에 따라)
-            const attackRange = new THREE.Sphere(new THREE.Vector3(), 1);
-            attackRange.center.copy(localCharacter.position);
+    //         // 공격 범위 설정 (칼을 휘두르는 궤적에 따라)
+    //         const attackRange = new THREE.Sphere(new THREE.Vector3(), 1);
+    //         attackRange.center.copy(localCharacter.position);
 
-            // 적중 검사 함수
-            const checkHit = () => {
-                if (hitDetected) return; // 이미 적중한 경우 무시
+    //         // 적중 검사 함수
+    //         const checkHit = () => {
+    //             if (hitDetected) return; // 이미 적중한 경우 무시
 
-                for (const id in players) {
-                    const player = players[id];
-                    if (player) {
-                        player.updateWorldMatrix(true, false);
-                        const playerBox = new THREE.Box3().setFromObject(player);
-                        if (attackRange.intersectsBox(playerBox)) {
-                            console.log('공격 적중!'); // 콘솔에 메시지 출력
+    //             for (const id in players) {
+    //                 const player = players[id];
+    //                 if (player) {
+    //                     player.updateWorldMatrix(true, false);
+    //                     const playerBox = new THREE.Box3().setFromObject(player);
+    //                     if (attackRange.intersectsBox(playerBox)) {
+    //                         console.log('characters: 공격 적중!'); // 콘솔에 메시지 출력
 
-                            // 피해 적용 (예: HP 감소)
-                            player.hp -= 10; // 더미 캐릭터의 HP 감소 (예시)
-                            updateHPBar(player);
+    //                         // 피해 적용 (예: HP 감소)
+    //                         player.hp -= 10; // 더미 캐릭터의 HP 감소 (예시)
+    //                         updateHPBar(player);
 
-                            if (player.hp <= 0) {
-                                player.hp = 0;
-                                // 캐릭터 쓰러짐
-                                player.rotation.x = Math.PI / 2;
-                            }
+    //                         if (player.hp <= 0) {
+    //                             player.hp = 0;
+    //                             // 캐릭터 쓰러짐
+    //                             player.rotation.x = Math.PI / 2;
+    //                         }
 
-                            // 서버에 피해 이벤트 전송
-                            ws.send(JSON.stringify({
-                                type: 'damage',
-                                targetId: id,
-                                damage: 10
-                            }));
+    //                         // 서버에 피해 이벤트 전송
+    //                         ws.send(JSON.stringify({
+    //                             type: 'damage',
+    //                             targetId: id,
+    //                             damage: 10
+    //                         }));
 
-                            hitDetected = true; // 적중 감지
-                            break; // 한 번 적중하면 더 이상 검사하지 않음
-                        }
-                    }
-                }
-            };
+    //                         hitDetected = true; // 적중 감지
+    //                         break; // 한 번 적중하면 더 이상 검사하지 않음
+    //                     }
+    //                 }
+    //             }
+    //         };
 
-            const animateSwing = () => {
-                if (attackMotion.x < maxSwing) {
-                    attackMotion.x += swingUpSpeed;
-                    rightArm.rotation.x = originalRotation - attackMotion.x;
-                    requestAnimationFrame(animateSwing);
-                } else {
-                    setTimeout(() => {
-                        const animateReturn = () => {
-                            if (attackMotion.x > 0) {
-                                attackMotion.x -= swingDownSpeed;
-                                rightArm.rotation.x = originalRotation - attackMotion.x;
-                                requestAnimationFrame(animateReturn);
-                            } else {
-                                rightArm.rotation.x = originalRotation;
-                                isAttacking = false;
-                            }
-                        };
-                        animateReturn();
-                    }, 50);
-                }
-                checkHit();
-            };
+    //         const animateSwing = () => {
+    //             if (attackMotion.x < maxSwing) {
+    //                 attackMotion.x += swingUpSpeed;
+    //                 rightArm.rotation.x = originalRotation - attackMotion.x;
+    //                 requestAnimationFrame(animateSwing);
+    //             } else {
+    //                 setTimeout(() => {
+    //                     const animateReturn = () => {
+    //                         if (attackMotion.x > 0) {
+    //                             attackMotion.x -= swingDownSpeed;
+    //                             rightArm.rotation.x = originalRotation - attackMotion.x;
+    //                             requestAnimationFrame(animateReturn);
+    //                         } else {
+    //                             rightArm.rotation.x = originalRotation;
+    //                             isAttacking = false;
+    //                         }
+    //                     };
+    //                     animateReturn();
+    //                 }, 50);
+    //             }
+    //             checkHit();
+    //         };
 
-            animateSwing();
-        } else {
-            console.error("오른팔을 찾을 수 없습니다.");
-            isAttacking = false; // 오류 발생 시 공격 상태 초기화
-        }
-    }
+    //         animateSwing();
+    //     } else {
+    //         console.error("오른팔을 찾을 수 없습니다.");
+    //         isAttacking = false; // 오류 발생 시 공격 상태 초기화
+    //     }
+    // }
+    isAttacking = false;
 }
 
 // 총 발사 함수
 function shoot() {
     if (!hasGun || isShooting) {
+        console.log(hasGun,"isShooting", isShooting);
         console.log('총이 없거나 발사 중입니다!');
         return;
     }
+    sendShoot(localCharacter);
+    // isShooting = true; // shooting 애니메이션 시작
 
-    isShooting = true; // shooting 애니메이션 시작
+    // const rightArm = localCharacter.getObjectByName("rightArm");
+    // if (rightArm) {
+    //     const originalRotation = rightArm.rotation.x;
+    //     const shootMotion = { x: 0 };
+    //     const shootUpSpeed = 0.2; // 팔을 올리는 속도
+    //     const shootDownSpeed = 0.1; // 팔을 내리는 속도
 
-    const rightArm = localCharacter.getObjectByName("rightArm");
-    if (rightArm) {
-        const originalRotation = rightArm.rotation.x;
-        const shootMotion = { x: 0 };
-        const shootUpSpeed = 0.2; // 팔을 올리는 속도
-        const shootDownSpeed = 0.1; // 팔을 내리는 속도
+    //     const animateShootUp = () => {
+    //         rightArm.rotation.x = originalRotation - shootMotion.x;
+    //         if (shootMotion.x < Math.PI / 2) {
+    //             shootMotion.x += shootUpSpeed;
+    //             requestAnimationFrame(animateShootUp);
+    //         } else {
+    //             setTimeout(shootBullet, 50); // 잠시 멈춘 후 총알 발사
+    //         }
+    //     };
 
-        const animateShootUp = () => {
-            rightArm.rotation.x = originalRotation - shootMotion.x;
-            if (shootMotion.x < Math.PI / 2) {
-                shootMotion.x += shootUpSpeed;
-                requestAnimationFrame(animateShootUp);
-            } else {
-                setTimeout(shootBullet, 50); // 잠시 멈춘 후 총알 발사
-            }
-        };
+    //     const animateShootDown = () => {
+    //         rightArm.rotation.x = originalRotation - shootMotion.x;
+    //         if (shootMotion.x > 0) {
+    //             shootMotion.x -= shootDownSpeed;
+    //             requestAnimationFrame(animateShootDown);
+    //         } else {
+    //             rightArm.rotation.x = originalRotation;
+    //             isShooting = false; // shooting 애니메이션 종료
+    //         }
+    //     };
 
-        const animateShootDown = () => {
-            rightArm.rotation.x = originalRotation - shootMotion.x;
-            if (shootMotion.x > 0) {
-                shootMotion.x -= shootDownSpeed;
-                requestAnimationFrame(animateShootDown);
-            } else {
-                rightArm.rotation.x = originalRotation;
-                isShooting = false; // shooting 애니메이션 종료
-            }
-        };
+    //     const shootBullet = () => {
+    //         const bullet = createBullet();
+    //         const gunPosition = new THREE.Vector3(0, -0.3, 0); // 손 위치에 총구 위치 설정
+    //         rightArm.localToWorld(gunPosition); // 총구 위치를 월드 좌표로 변환
+    //         bullet.position.copy(gunPosition);
+    //         bullet.quaternion.copy(localCharacter.quaternion);
 
-        const shootBullet = () => {
-            const bullet = createBullet();
-            const gunPosition = new THREE.Vector3(0, -0.3, 0); // 손 위치에 총구 위치 설정
-            rightArm.localToWorld(gunPosition); // 총구 위치를 월드 좌표로 변환
-            bullet.position.copy(gunPosition);
-            bullet.quaternion.copy(localCharacter.quaternion);
+    //         const direction = new THREE.Vector3();
+    //         localCharacter.getWorldDirection(direction);
+    //         bullet.userData.velocity = direction.multiplyScalar(0.2); // 총알 속도 설정
+    //         bullet.userData.startPosition = bullet.position.clone(); // 총알의 초기 위치 저장
 
-            const direction = new THREE.Vector3();
-            localCharacter.getWorldDirection(direction);
-            bullet.userData.velocity = direction.multiplyScalar(0.2); // 총알 속도 설정
-            bullet.userData.startPosition = bullet.position.clone(); // 총알의 초기 위치 저장
+    //         animateShootDown(); // 총을 쏜 후 팔을 내리는 애니메이션 시작
+    //     };
 
-            animateShootDown(); // 총을 쏜 후 팔을 내리는 애니메이션 시작
-        };
-
-        animateShootUp();
-    } else {
-        console.error("오른팔을 찾을 수 없습니다.");
-        isShooting = false; // 오류 발생 시 shooting 상태 초기화
-    }
+    //     animateShootUp();
+    // } else {
+    //     console.error("오른팔을 찾을 수 없습니다.");
+    //     isShooting = false; // 오류 발생 시 shooting 상태 초기화
+    // }
 }
 
 function moveCharacter() {
@@ -359,6 +363,9 @@ function moveCharacter() {
     }
     if (keyState['ArrowRight'] || keyState['KeyD']) {
         localCharacter.rotation.y -= rotationSpeed;
+    }
+    if(keyState["ArrowDown"]||keyState['KeyS']){
+        direction.z -= speed;
     }
 
     if (direction.length() > 0) {

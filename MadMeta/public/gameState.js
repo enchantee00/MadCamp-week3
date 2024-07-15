@@ -9,7 +9,7 @@ let lastRotationY = 0;
 
 // WebSocket 연결 설정
 
-const ws = new WebSocket('ws://143.248.226.64:8080');
+const ws = new WebSocket('ws://143.248.226.168:8080');
 
 ws.onopen = () => {
     console.log('WebSocket 연결이 열렸습니다.');
@@ -23,13 +23,18 @@ ws.onmessage = (message) => {
         if (data.states) {
             Object.keys(data.states).forEach(clientId => {
                 const state = data.states[clientId];
+                console.log("gameState init: clientId",clientId,"state: ",state);
                 if (clientId !== ws.id) {
                     const character = createCharacter(clientId);
                     character.position.set(state.position.x, state.position.y, state.position.z);
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
-                players[clientId] = character;  // 여기서 character 객체 추가
+                    players[clientId] = character; 
+                    if(state.weapon){
+                        players[clientId].weapon = state.weapon;
+                        updatePlayerWeapon(character,state.weapon);
+                    } // 여기서 character 객체 추가
 
                 }
 
@@ -68,9 +73,10 @@ ws.onmessage = (message) => {
             player.rotation.y = data.rotation.y;
         }
     } else if (data.type === 'damage') {
+        console.log("gameState: damage");
         // 피해 이벤트 처리
         let player = players[data.targetId];
-        if (player) {
+        if (player) { 
             player.hp -= data.damage;
             console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
             updateHPBar(player);
@@ -81,21 +87,25 @@ ws.onmessage = (message) => {
             }
         }
     } else if (data.type === 'attack') {
+        console.log("gameState: attack");
         // 공격 이벤트 처리
         const attacker = players[data.id];
         if (attacker) {
             performAttack(attacker);
         }
     } else if (data.type === 'shoot') {
+        console.log("gameState: shoot");
         // 총 발사 이벤트 처리
         const shooter = players[data.id];
         if (shooter) {
             performShoot(shooter);
         }
     } else if (data.type === 'itemRemoved') {
+        console.log("gameState: itemRemoved");
         // 아이템 제거 이벤트 처리
         removeItemFromScene(data.itemId);
     } else if (data.type === 'playerWeaponUpdate') {
+        console.log("gameState: playerWeaponUpdate");
         // 플레이어 무기 상태 업데이트
         const player = players[data.playerId];
         if (player) {
@@ -139,26 +149,33 @@ function sendUpdate() {
 }
 
 function sendAttack() {
+    if(!isAttacking){
     ws.send(JSON.stringify({
         type: 'attack',
         id: ws.id
-    }));
+    }));}
 }
 
 function sendShoot() {
+    if(!isShooting){
     ws.send(JSON.stringify({
         type: 'shoot',
         id: ws.id
-    }));
+    }));}
 }
 
 
 
 // 이 함수는 캐릭터가 공격을 수행하는 로직을 실행합니다.
 function performAttack(attacker) {
-    if (!attacker) return;
+    console.log("performattack");
+    if (!attacker||isAttacking||!hasSword) {
+        console.log("이미 공격중이거나 공격자가 없습니다.")
+        
+        return;}
 
     // 공격 애니메이션 및 논리를 추가합니다.
+    isAttacking = true;
     const rightArm = attacker.getObjectByName("rightArm");
     if (rightArm) {
         const originalRotation = rightArm.rotation.x;
@@ -200,7 +217,7 @@ function performAttack(attacker) {
                     player.updateWorldMatrix(true, false);
                     const playerBox = new THREE.Box3().setFromObject(player);
                     if (attackRange.intersectsBox(playerBox)) {
-                        console.log('공격 적중!');
+                        console.log(id,'에게공격 적중!');
 
                         player.hp -= 10;
                         updateHPBar(player);
@@ -247,12 +264,18 @@ function performAttack(attacker) {
 
         animateSwing();
     }
+    isAttacking = false;
 }
 
 // 이 함수는 캐릭터가 총을 발사하는 로직을 실행합니다.
 function performShoot(shooter) {
-    if (!shooter) return;
-
+    console.log("performShoot");
+    if (!shooter||isShooting||!hasGun)         {
+        console.log("hasGun:",hasGun,'무기가 없거나 공격 중입니다!');
+        console.log(isAttacking);
+    return;
+    }
+    isShooting = true;
     const rightArm = shooter.getObjectByName("rightArm");
     if (rightArm) {
         const originalRotation = rightArm.rotation.x;
@@ -282,7 +305,7 @@ function performShoot(shooter) {
 
         const shootBullet = () => {
             const bullet = createBullet();
-            const gunPosition = new THREE.Vector3(0, -0.3, 0);
+            const gunPosition = new THREE.Vector3(0, -2, 0);
             rightArm.localToWorld(gunPosition);
             bullet.position.copy(gunPosition);
             bullet.quaternion.copy(shooter.quaternion);
@@ -296,7 +319,11 @@ function performShoot(shooter) {
         };
 
         animateShootUp();
-    }
+    } else {
+            console.error("오른팔을 찾을 수 없습니다.");
+            isShooting = false; // 오류 발생 시 shooting 상태 초기화
+        }
+    isShooting = false;
 }
 
 function createBullet() {
@@ -315,6 +342,7 @@ function updateBullets() {
 
         // 총알이 플레이어와 충돌했는지 검사
         for (const id in players) {
+            // if(id == ws.id){continue;}
             const player = players[id];
             const playerBox = new THREE.Box3().setFromObject(player);
             const bulletBox = new THREE.Box3().setFromObject(bullet);
@@ -365,11 +393,13 @@ function removeItemFromScene(itemId) {
 
 // 무기 업데이트 함수
 function updatePlayerWeapon(player, weapon) {
+    console.log(player, weapon,"updatePlayerWeapon");
     const rightArm = player.getObjectByName("rightArm");
     if (rightArm) {
         // 기존 무기를 제거
         const existingWeapon = rightArm.children.find(child => child.isMesh);
         if (existingWeapon) {
+        
             rightArm.remove(existingWeapon);
         }
         // 새로운 무기를 추가
@@ -377,9 +407,13 @@ function updatePlayerWeapon(player, weapon) {
         if (weapon === 'sword') {
             weaponGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            hasGun = false;
+            hasSword = true;
         } else if (weapon === 'gun') {
             weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            hasGun = true;
+            hasSword = false;
         }
         const newWeapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
         rightArm.add(newWeapon);
