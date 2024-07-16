@@ -6,7 +6,9 @@ const WebSocket = require('ws');
 const app = express();
 const port = 3000;
 
+
 let gameOn = false;
+
 // 
 
 
@@ -157,8 +159,10 @@ wss.on('connection', (ws) => {
     // 일단 3 2 1  start 카운트 처리하기
     // 아이템 뿌리고 시작
     if (data.type === "gameStart") {
+
       if(gameOn) return;
       gameOn = true;
+
       sendGameStartSequence().then(() => {
           items = generateRandomItems(20);
           console.log(items.length);
@@ -166,7 +170,9 @@ wss.on('connection', (ws) => {
               type: "itemDistribution",
               items: items
           }));
+
           broadcastRemainingTime(30);
+
       });
   }
   
@@ -276,4 +282,5 @@ function broadcastRemainingTime(n) {
   }, n * 1000); // n초 후에 실행
   gameOn = false;
 }
+
 console.log('WebSocket server is running on ws://localhost:8080');
