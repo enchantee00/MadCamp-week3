@@ -58,11 +58,10 @@ function init() {
     confirmButton = document.getElementById('confirmButton');
 
 
-    
     submitText.addEventListener('click', () => {
         const text = inputText.value;
         if (currentWhiteboard) {
-            updateWhiteboardTexture(currentWhiteboard, text);
+            sendWhiteboard(currentWhiteboard, text);
         }
         inputBox.style.display = 'none';
         enableGameControls();
@@ -82,7 +81,7 @@ function init() {
                 console.log('Enter')
                 const text = inputText.value;
                 if (currentWhiteboard) {
-                    updateWhiteboardTexture(currentWhiteboard, text);
+                    sendWhiteboard(currentWhiteboard, text);
                 }
                 inputBox.style.display = 'none';
                 enableGameControls();
@@ -109,11 +108,6 @@ function disableGameControls() {
     gameControlsEnabled = false;
 }
 
-
-init();
-
-
-// 화이트보드 텍스처 업데이트 함수
 function updateWhiteboardTexture(whiteboard, text) {
     const { canvas, context, texture } = whiteboard;
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -123,7 +117,13 @@ function updateWhiteboardTexture(whiteboard, text) {
     context.font = '48px Arial';
     context.fillText(text, 50, 100);
     texture.needsUpdate = true; // 텍스처가 업데이트되었음을 알림
+
+    console.log("화보 업데이트")
 }
+
+
+init();
+
 
 classrooms = [];
 // 강의실 생성 함수
@@ -186,7 +186,7 @@ function createClassroom(x, z, idx) {
     createPodium(x, z);
 
      // 화이트보드 추가 (Canvas 텍스처 사용)
-     function createWhiteboard(wx, wz) {
+     function createWhiteboard(wx, wz, idx) {
         const canvas = document.createElement('canvas');
         canvas.width = 1024;
         canvas.height = 512;
@@ -195,19 +195,20 @@ function createClassroom(x, z, idx) {
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.fillStyle = 'black';
         context.font = '48px Arial';
-        context.fillText('Whiteboard', 50, 100);
+        context.fillText('', 50, 100);
 
         const texture = new THREE.CanvasTexture(canvas);
         const whiteboardMaterial = new THREE.MeshBasicMaterial({ map: texture });
         const whiteboardGeometry = new THREE.PlaneGeometry(16, 8);
         const whiteboard = new THREE.Mesh(whiteboardGeometry, whiteboardMaterial);
+        const whiteboardId = idx;
         whiteboard.position.set(wx, 5, wz - 9); // backWall에 부착
         scene.add(whiteboard);
 
-        return { canvas, context, texture, whiteboard };
+        return { canvas, context, texture, whiteboard, whiteboardId };
     }
 
-    const whiteboard = createWhiteboard(x, z);
+    const whiteboard = createWhiteboard(x, z, idx);
 
     // 강의실 정보 저장
     classrooms.push({
@@ -361,8 +362,6 @@ function animate() {
         }
     });
     
-
-
     // 화이트보드 가까이 있을 때 입력 창 표시
     if (characterNearWhiteboard) {
         questionBox.style.display = 'block';
