@@ -6,10 +6,14 @@ const WebSocket = require('ws');
 const app = express();
 const port = 3000;
 
+
+// 
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-app.listen(port, '143.248.226.64', () => {
+app.listen(port, '143.248.226.153', () => {
 
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
@@ -28,10 +32,16 @@ let players = { // dummy 플레이어 추가
     }
 };
 let items = { // dummy 아이템 추가
-    itemId1: { type: 'sword', position: { x: 6, y: 0.5, z: -6 } },
-    itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } }
+    // itemId1: { type: 'gun', position: { x: 6, y: 0.5, z: -6 } },
+    // itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } },
+    // itemId3: { type: 'gun', position: { x: 10, y: 0.5, z: -6 } },
+    // itemId4: { type: 'gun', position: { x: 12, y: 0.5, z: -6 } },
+    // itemId5: { type: 'gun', position: { x: 16, y: 0.5, z: -6 } },
+    // itemId6: { type: 'gun', position: { x: 18, y: 0.5, z: -6 } },
+    // itemId7: { type: 'gun', position: { x: 20, y: 0.5, z: -6 } },
+    // itemId8: { type: 'gun', position: { x: 22, y: 0.5, z: -6 } }
 };
-
+let usingItems = {};
 // 모든 클라이언트에게 메시지를 브로드캐스트하는 함수
 function broadcast(message, excludeId) {
   Object.keys(clients).forEach(clientId => {
@@ -47,9 +57,9 @@ wss.on('connection', (ws) => {
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보와 아이템 정보 전달
-  ws.send(JSON.stringify({ type: 'init', states: players, items }));
+  ws.send(JSON.stringify({ type: 'init', states: players }));
 
-  // 새로운 플레이어 정보를 players 객체에 추가
+  // 새로운 플레이어 정보를 players 객체에 추가ㅁㅈ
   players[id] = {
     id: id,
     hp: 100,
@@ -86,6 +96,7 @@ wss.on('connection', (ws) => {
 
     // 공격 이벤트 처리
     if (data.type === 'attack') {
+      console.log("server: attack");
       broadcast(JSON.stringify({
         type: 'attack',
         id: ws.id
@@ -94,6 +105,7 @@ wss.on('connection', (ws) => {
 
     // 총 발사 이벤트 처리
     if (data.type === 'shoot') {
+      console.log("server: shoot");
       broadcast(JSON.stringify({
         type: 'shoot',
         id: ws.id
@@ -102,6 +114,7 @@ wss.on('connection', (ws) => {
 
     // 데미지 이벤트 처리
     if (data.type === 'damage') {
+      console.log("server: damage");
       const targetClient = clients[data.targetId];
       if (targetClient && players[data.targetId]) {
         // HP 감소
@@ -120,12 +133,13 @@ wss.on('connection', (ws) => {
     if (data.type === 'pickup') {
       // 아이템이 존재하는지 확인
       if (items[data.itemId]) {
-        // 아이템을 items 객체에서 제거
+        // 아이템을 items 객체에서 제거 후 usingItems 로 이동
+        usingItems[data.itemId] = items[data.itemId];
         delete items[data.itemId];
-
         // 아이템을 플레이어에게 할당
-        players[data.playerId].weapon = data.itemId;
-
+        
+        players[data.playerId].weapon = usingItems[data.itemId].type;
+        console.log("pickup",usingItems[data.itemId].type);
         // 모든 클라이언트에게 아이템 제거와 플레이어의 아이템 상태 업데이트 브로드캐스트
         broadcast(JSON.stringify({
           type: 'itemRemoved',
@@ -135,10 +149,48 @@ wss.on('connection', (ws) => {
         broadcast(JSON.stringify({
           type: 'playerWeaponUpdate',
           playerId: data.playerId,
-          weapon: data.itemId
+          weapon: usingItems[data.itemId].type
         }));
       }
     }
+    // 게임 스타트 이벤트 처리
+    // 일단 3 2 1  start 카운트 처리하기
+    // 아이템 뿌리고 시작
+    if (data.type === "gameStart") {
+      sendGameStartSequence().then(() => {
+          items = generateRandomItems(20);
+          console.log(items.length);
+          broadcast(JSON.stringify({
+              type: "itemDistribution",
+              items: items
+          }));
+          // 5초 후에 다른 메시지를 broadcast
+          setTimeout(() => {
+            resetWeapons();
+            broadcast(JSON.stringify({
+                type: "gameOver",
+                players: players
+            }));
+            
+        }, 5000); // 5000ms = 5초
+      });
+  }
+  
+
+    // // 아이템 스위칭 이벤트 처리
+    // if(data.type === 'switchItem'){
+    //   //아이템이 사용중인지 확인
+    //   if(usingItems[data.itemId]){
+    //     //usingItem에서 items로 옮기기
+    //     items[data.itemId] = usingItems[data.itemId]
+    //     delete usingItems[data.itemId];
+
+    //     //아이템을 플레이어에게 할당
+    //     players[data.itemId].weapon = data.itemId;
+
+    //     broadcast
+    //   }
+    // }
   });
 
   ws.on('close', () => {
@@ -147,5 +199,62 @@ wss.on('connection', (ws) => {
     broadcast(JSON.stringify({ type: 'removePlayer', id }));
   });
 });
+
+//gameSequence 보내기
+function sendGameStartSequence() {
+  return new Promise((resolve) => {
+      let count = 3;
+
+      const countdown = setInterval(() => {
+          if (count > 0) {
+              broadcast(JSON.stringify({
+                  type: 'readyForGame',
+                  state: count.toString()
+              }));
+              count--;
+          } else {
+              clearInterval(countdown);
+              broadcast(JSON.stringify({
+                  type: 'readyForGame',
+                  state: 'gamestart'
+              }));
+              resolve(); // Promise를 해결하여 후속 작업을 실행 가능하게 합니다.
+          }
+      }, 1000);
+  });
+}
+
+
+//game Item 뿌리기
+function getRandomPosition(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function getRandomItemType() {
+  const types = ['gun', 'sword'];
+  return types[Math.floor(Math.random() * types.length)];
+}
+
+function generateRandomItems(n) {
+  let items = {};
+  for (let i = 0; i < n; i++) {
+      const itemId = `itemId${i + 1}`;
+      const position = {
+          x: getRandomPosition(-60, 60),
+          y: 0.5,
+          z: getRandomPosition(-60, 60)
+      };
+      const type = getRandomItemType();
+      items[itemId] = { type: type, position: position };
+  }
+  return items;
+}
+function resetWeapons() {
+  for (let id in players) {
+    if (players.hasOwnProperty(id)) {
+      players[id].weapon = null;
+    }
+  }
+}
 
 console.log('WebSocket server is running on ws://localhost:8080');

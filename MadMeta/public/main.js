@@ -56,6 +56,8 @@ function init() {
     submitText = document.getElementById('submitText');
     questionBox = document.getElementById('questionBox');
     confirmButton = document.getElementById('confirmButton');
+
+
     
     submitText.addEventListener('click', () => {
         const text = inputText.value;
@@ -337,6 +339,8 @@ function animate() {
     updateBullets(); // 총알 업데이트
     // controls.update(); // OrbitControls 업데이트
 
+
+
     let characterNearWhiteboard = false;
 
     classrooms.forEach(classroom => {
@@ -344,7 +348,8 @@ function animate() {
         for (const id in players) {
             const player = players[id];
             // 화이트보드 가까이 있는지 확인
-            if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
+            if (player&&(player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) || localCharacter&&(localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5)) {
+              
                 characterNearWhiteboard = true;
                 currentWhiteboard = classroom.whiteboard;
             }
