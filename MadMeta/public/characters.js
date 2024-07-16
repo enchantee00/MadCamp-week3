@@ -8,14 +8,6 @@ let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
 
-navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-        localStream = stream;
-    })
-    .catch(error => {
-        console.error('Error accessing audio stream', error);
-    });
-
 
 // HP 바 생성 함수
 function createHPBar(character) {
