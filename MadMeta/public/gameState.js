@@ -75,9 +75,8 @@ ws.onmessage = (message) => {
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
-                    players[clientId].character = character; 
-
-                    players[clientId].state = state;
+                    players[clientId] = character; 
+                    players[clientId].weapon = state.weapon;
 
                     updatePlayerWeapon(character,state.weapon);
                     // 여기서 character 객체 추가
@@ -85,7 +84,7 @@ ws.onmessage = (message) => {
                 }
                 console.log(players[clientId]);
 
-            });ㅇ
+            });
         }
 
 
@@ -124,7 +123,7 @@ ws.onmessage = (message) => {
         if (leftLeg) leftLeg.rotation.x = walkCycle;
         if (rightLeg) rightLeg.rotation.x = -walkCycle;
         if (leftArm) leftArm.rotation.x = -walkCycle;
-        if (rightArm &&!(attackInProgress||shootingInProgress)) rightArm.rotation.x = walkCycle;
+        if (rightArm &&!attackInProgress&&!shootingInProgress) rightArm.rotation.x = walkCycle;
         }
     } else if (data.type === 'damage') {
         console.log("gameState: damage");
@@ -150,8 +149,11 @@ ws.onmessage = (message) => {
     } else if (data.type === 'shoot') {
         console.log("gameState: shoot");
         // 총 발사 이벤트 처리
-        const shooter = players[data.id].character;
+        
+        const shooter = players[data.id];
+        console.log("weeapon: ",shooter.weapon);
         if (shooter) {
+            console.log();
             performShoot(shooter);
         }
     } else if (data.type === 'itemRemoved') {
@@ -200,15 +202,22 @@ ws.onmessage = (message) => {
         console.log("gameover");
         showRemainingTime(false);
         deleteAllItems();
+        const playersInServer = data.players;
+        // console.log(playersInServer);
+        // console.log(players);
         for (let clientId in players) {
+            
             if (players.hasOwnProperty(clientId)) {
-              players[clientId].weapon = null;
-              updatePlayerWeapon(players[clientId].character, null);
-              updatePlayerWeapon(localCharacter,null);
+              players[clientId].weapon = playersInServer[clientId].weapon;
+
+              players[clientId].hp = 100;
+              updateHPBar(players[clientId]);
+              players[clientId].rotation.x = 0;
+              players[clientId].position.y = 0.6;
+              updatePlayerWeapon(players[clientId], null);
+            //   updatePlayerWeapon(localCharacter,null);
             }
         }
-        hasGun = false;
-        hasSword = false;
         
     }
 };
@@ -386,7 +395,7 @@ async function performShoot(shooter) {
         const originalRotation = rightArm.rotation.x;
         const shootMotion = { x: 0 };
         const shootUpSpeed = 0.2;
-        const shootDownSpeed = 0.1;
+        const shootDownSpeed = 0.2;
 
         const animateShootUp = () => {
             return new Promise(resolve => {

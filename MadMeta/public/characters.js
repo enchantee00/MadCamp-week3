@@ -240,8 +240,8 @@ function shoot() {
 function moveCharacter() {
     if (!localCharacter) return;
 
-    const speed = 0.1; // 이동 속도 조정
-    const rotationSpeed = 0.05; // 회전 속도 조정
+    const speed = 0.3; // 이동 속도 조정
+    const rotationSpeed = 0.1; // 회전 속도 조정
     let direction = new THREE.Vector3();
 
     if (keyState['ArrowUp'] || keyState['KeyW']) {

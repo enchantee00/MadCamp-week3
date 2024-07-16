@@ -12,7 +12,7 @@ let gameOn = false;
 // 
 
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 
 app.listen(port, '143.248.226.153', () => {
@@ -171,26 +171,11 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(30);
+          broadcastRemainingTime(10);
 
       });
-  }
-  
+    }
 
-    // // 아이템 스위칭 이벤트 처리
-    // if(data.type === 'switchItem'){
-    //   //아이템이 사용중인지 확인
-    //   if(usingItems[data.itemId]){
-    //     //usingItem에서 items로 옮기기
-    //     items[data.itemId] = usingItems[data.itemId]
-    //     delete usingItems[data.itemId];
-
-    //     //아이템을 플레이어에게 할당
-    //     players[data.itemId].weapon = data.itemId;
-
-    //     broadcast
-    //   }
-    // }
   });
 
   ws.on('close', () => {
@@ -249,10 +234,11 @@ function generateRandomItems(n) {
   }
   return items;
 }
-function resetWeapons() {
+function resetPlayers() {
   for (let id in players) {
     if (players.hasOwnProperty(id)) {
       players[id].weapon = null;
+      players[id].hp = 100;
     }
   }
 }
@@ -274,7 +260,7 @@ function broadcastRemainingTime(n) {
   // n초 후에 다른 메시지를 broadcast하고 interval을 종료
   setTimeout(() => {
       clearInterval(intervalId);
-      resetWeapons();
+      resetPlayers();
       broadcast(JSON.stringify({
           type: "gameOver",
           players: players
