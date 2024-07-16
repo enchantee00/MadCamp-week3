@@ -8,6 +8,15 @@ let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
 
+navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+        localStream = stream;
+    })
+    .catch(error => {
+        console.error('Error accessing audio stream', error);
+    });
+
+
 // HP 바 생성 함수
 function createHPBar(character) {
     const barGeometry = new THREE.PlaneGeometry(1, 0.1);
@@ -188,6 +197,30 @@ function attack() {
     sendAttack(localCharacter);
 
 }
+
+function detectCharacterCollision() {
+    if (localCharacter) {
+        const localBox = new THREE.Box3().setFromObject(localCharacter);
+        for (const id in players) {
+            const player = players[id];
+            if (player) {
+                const playerBox = new THREE.Box3().setFromObject(player);
+                if (localBox.intersectsBox(playerBox)) {
+                    console.log('충돌!');
+                    if (!peerConnections[id]) {
+                        console.log('peer')
+                        setupPeerConnection(id, true);
+                    }
+                } else {
+                    if (peerConnections[id]) {
+                        removePeerConnection(id);
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 // 총 발사 함수
 function shoot() {

@@ -1,9 +1,7 @@
 let bullets = [];
 const keyState = {};
 let items = {}; // 로컬 아이템 관리
-// const peerConnections = {};
-// const audioElements = {};
-// const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
@@ -12,7 +10,6 @@ let lastRotationY = 0;
 let startButton;
 
 // WebSocket 연결 설정
-
 const ws = new WebSocket('ws://143.248.226.153:8080');
 
 function init(){
@@ -85,6 +82,7 @@ ws.onmessage = (message) => {
             scene.remove(player);
             delete players[data.id];
         }
+        removePeerConnection(data.id);
     } else if (data.type === 'update') {
         // 플레이어 위치 및 회전 업데이트
         let player = players[data.id];
@@ -220,6 +218,7 @@ function sendShoot() {
         id: ws.id
     }));
 }
+
 
 
 let attackInProgress = false;
