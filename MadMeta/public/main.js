@@ -125,7 +125,7 @@ function updateWhiteboardTexture(whiteboard, text) {
 
 classrooms = [];
 // 강의실 생성 함수
-function createClassroom(x, z) {
+function createClassroom(x, z, idx) {
     // 벽 추가
     const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xefe7da });
 
@@ -209,16 +209,17 @@ function createClassroom(x, z) {
 
     // 강의실 정보 저장
     classrooms.push({
-        whiteboard
+        whiteboard,
+        idx
     });
 
 }
 
 // 4개의 강의실 생성
-createClassroom(-60, -60);
-createClassroom(-20, -60);
-createClassroom(20, -60);
-createClassroom(60, -60);
+createClassroom(-60, -60, 1);
+createClassroom(-20, -60, 2);
+createClassroom(20, -60, 3);
+createClassroom(60, -60, 4);
 
 
 // 나무, 가로등, 벤치, 분수대 배치

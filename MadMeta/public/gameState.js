@@ -1,20 +1,19 @@
 let bullets = [];
 const keyState = {};
+
+
+// WebSocket 연결 설정
+const ws = new WebSocket('ws://143.248.226.10:3000');
+
+// Voice WebSocket
+const voiceWs = new WebSocket('wss://localhost:8081');
 const peerConnections = {};
 const audioElements = {};
 let localStream = null;
 
-// WebSocket 연결 설정
-const ws = new WebSocket('wss://143.248.226.64:3000');
 
-ws.onopen = async () => {
+ws.onopen = () => {
     ws.id = Date.now(); // 간단한 클라이언트 식별자 설정
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); // 로컬 오디오 스트림
-        initAudioDetection(localStream); // 음성 감지 초기화
-    } else {
-        throw new Error("getUserMedia is not supported in this browser");
-    }    
     createCharacter(ws.id, true); // 로컬 캐릭터 생성
     createCharacter('dummy'); // 더미 캐릭터 생성
     weapon = createWeapon('sword', new THREE.Vector3(6, 0.5, -6)); // 검 생성
@@ -80,15 +79,38 @@ ws.onmessage = (message) => {
         if (shooter) {
             performShoot(shooter);
         }
-    } else if (data.type === 'offer') {
+    }
+};
+
+
+voiceWs.onopen = async () => {
+    console.log('Connected to voice WebSocket server');
+
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Audio stream captured');
+    } catch (error) {
+        console.error('Error accessing audio stream:', error);
+        alert('Your browser does not support audio stream capture or the site is not served over HTTPS.');
+        return;
+    }
+
+    voiceWs.send(JSON.stringify({ type: 'newPlayer' }));
+};
+
+voiceWs.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'offer') {
         handleOffer(data.offer, data.id);
     } else if (data.type === 'answer') {
         handleAnswer(data.answer, data.id);
     } else if (data.type === 'candidate') {
         handleCandidate(data.candidate, data.id);
     }
-
 };
+
+
 
 ws.onclose = () => {
     Object.keys(players).forEach(id => {
@@ -135,15 +157,20 @@ function setupPeerConnection(id, createOffer) {
     });
 
     peerConnections[id] = pc;
+    console.log(pc);
     audioElements[id] = document.createElement('audio');
     document.body.appendChild(audioElements[id]);
 
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
     pc.ontrack = (event) => {
-        console.log("수신");
-        audioElements[id].srcObject = event.streams[0];
-        audioElements[id].play();
+        const audioElement = audioElements[id];
+        if (audioElement) {
+            audioElement.srcObject = event.streams[0];
+            audioElement.play().catch(error => {
+                console.error('Error playing audio:', error);
+            });
+        }
     };
 
     pc.onicecandidate = (event) => {
@@ -156,6 +183,14 @@ function setupPeerConnection(id, createOffer) {
         }
     };
 
+    pc.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state: ${pc.iceConnectionState}`);
+    };
+
+    pc.onconnectionstatechange = () => {
+        console.log(`Connection state: ${pc.connectionState}`);
+    };
+
     if (createOffer) {
         pc.createOffer().then(offer => {
             return pc.setLocalDescription(offer);
@@ -165,6 +200,8 @@ function setupPeerConnection(id, createOffer) {
                 offer: pc.localDescription,
                 id: id
             }));
+        }).catch(error => {
+            console.error('Error creating or setting local description:', error);
         });
     }
 }
@@ -181,17 +218,24 @@ function handleOffer(offer, id) {
             answer: pc.localDescription,
             id: id
         }));
+    }).catch(error => {
+        console.error('Error handling offer:', error);
     });
 }
 
+
 function handleAnswer(answer, id) {
     const pc = peerConnections[id];
-    pc.setRemoteDescription(new RTCSessionDescription(answer));
+    pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(error => {
+        console.error('Error setting remote description:', error);
+    });
 }
 
 function handleCandidate(candidate, id) {
     const pc = peerConnections[id];
-    pc.addIceCandidate(new RTCIceCandidate(candidate));
+    pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(error => {
+        console.error('Error adding ICE candidate:', error);
+    });
 }
 
 function removePeerConnection(id) {
@@ -230,7 +274,7 @@ function initAudioDetection(stream) {
 
         const average = values / array.length;
 
-        console.log("Current volume: " + average);
+        // console.log("Current volume: " + average);
     }
 }
 
