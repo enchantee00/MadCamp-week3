@@ -7,9 +7,32 @@ const keyState = {};
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
 
+//start button
+let startButton;
+
 // WebSocket 연결 설정
 
-const ws = new WebSocket('ws://143.248.226.168:8080');
+const ws = new WebSocket('ws://143.248.226.153:8080');
+
+function init(){
+    document.addEventListener('DOMContentLoaded', () => {
+        // 새 버튼 요소 가져오기
+        const startButton = document.getElementById('startButton');
+    
+        // 클릭 이벤트 리스너 추가
+        startButton.addEventListener('click', () => {
+            console.log('Start Button Clicked');
+            // 여기에 버튼 클릭 시 실행할 코드를 추가합니다.
+            ws.send(JSON.stringify({
+                type: 'gameStart',
+                id : ws.id
+            }));
+        });
+    });
+    
+
+}
+init();
 
 ws.onopen = () => {
     console.log('WebSocket 연결이 열렸습니다.');
@@ -113,6 +136,10 @@ ws.onmessage = (message) => {
             updatePlayerWeapon(player, data.weapon);
             console.log(`Player ${data.playerId} weapon updated to ${data.weapon}`);
         }
+    //game start 이벤트 처리
+    } else if (data.type ==="readyForGame"){
+        console.log(data.state);
+
     }
 };
 
@@ -149,33 +176,34 @@ function sendUpdate() {
 }
 
 function sendAttack() {
-    if(!isAttacking){
+
     ws.send(JSON.stringify({
         type: 'attack',
         id: ws.id
-    }));}
+    }));
 }
 
 function sendShoot() {
-    if(!isShooting){
+
     ws.send(JSON.stringify({
         type: 'shoot',
         id: ws.id
-    }));}
+    }));
 }
 
 
+let attackInProgress = false;
 
-// 이 함수는 캐릭터가 공격을 수행하는 로직을 실행합니다.
 function performAttack(attacker) {
     console.log("performattack");
-    if (!attacker||isAttacking||!hasSword) {
-        console.log("이미 공격중이거나 공격자가 없습니다.")
-        
-        return;}
+    if (!attacker || attackInProgress || !hasSword) {
+        console.log("이미 공격중이거나 공격자가 없습니다.");
+        return;
+    }
+
+    attackInProgress = true;
 
     // 공격 애니메이션 및 논리를 추가합니다.
-    isAttacking = true;
     const rightArm = attacker.getObjectByName("rightArm");
     if (rightArm) {
         const originalRotation = rightArm.rotation.x;
@@ -186,23 +214,34 @@ function performAttack(attacker) {
         let hitDetected = false;
 
         const animateSwingUp = () => {
-            rightArm.rotation.x = originalRotation - attackMotion.x;
-            if (attackMotion.x < maxSwing) {
-                attackMotion.x += swingUpSpeed;
-                requestAnimationFrame(animateSwingUp);
-            } else {
-                setTimeout(animateSwingDown, 50);
-            }
+            return new Promise(resolve => {
+                const swingUp = () => {
+                    rightArm.rotation.x = originalRotation - attackMotion.x;
+                    if (attackMotion.x < maxSwing) {
+                        attackMotion.x += swingUpSpeed;
+                        requestAnimationFrame(swingUp);
+                    } else {
+                        resolve();
+                    }
+                };
+                swingUp();
+            });
         };
 
         const animateSwingDown = () => {
-            rightArm.rotation.x = originalRotation - attackMotion.x;
-            if (attackMotion.x > 0) {
-                attackMotion.x -= swingDownSpeed;
-                requestAnimationFrame(animateSwingDown);
-            } else {
-                rightArm.rotation.x = originalRotation;
-            }
+            return new Promise(resolve => {
+                const swingDown = () => {
+                    rightArm.rotation.x = originalRotation - attackMotion.x;
+                    if (attackMotion.x > 0) {
+                        attackMotion.x -= swingDownSpeed;
+                        requestAnimationFrame(swingDown);
+                    } else {
+                        rightArm.rotation.x = originalRotation;
+                        resolve();
+                    }
+                };
+                swingDown();
+            });
         };
 
         const attackRange = new THREE.Sphere(new THREE.Vector3(), 1);
@@ -217,7 +256,7 @@ function performAttack(attacker) {
                     player.updateWorldMatrix(true, false);
                     const playerBox = new THREE.Box3().setFromObject(player);
                     if (attackRange.intersectsBox(playerBox)) {
-                        console.log(id,'에게공격 적중!');
+                        console.log(id, '에게 공격 적중!');
 
                         player.hp -= 10;
                         updateHPBar(player);
@@ -240,42 +279,31 @@ function performAttack(attacker) {
             }
         };
 
-        const animateSwing = () => {
-            if (attackMotion.x < maxSwing) {
-                attackMotion.x += swingUpSpeed;
-                rightArm.rotation.x = originalRotation - attackMotion.x;
-                requestAnimationFrame(animateSwing);
-            } else {
-                setTimeout(() => {
-                    const animateReturn = () => {
-                        if (attackMotion.x > 0) {
-                            attackMotion.x -= swingDownSpeed;
-                            rightArm.rotation.x = originalRotation - attackMotion.x;
-                            requestAnimationFrame(animateReturn);
-                        } else {
-                            rightArm.rotation.x = originalRotation;
-                        }
-                    };
-                    animateReturn();
-                }, 50);
-            }
+        const animateSwing = async () => {
+            await animateSwingUp();
             checkHit();
+            setTimeout(async () => {
+                await animateSwingDown();
+                attackInProgress = false;
+            }, 50);
         };
 
         animateSwing();
+    } else {
+        attackInProgress = false;
     }
-    isAttacking = false;
 }
+let shootingInProgress = false;
 
 // 이 함수는 캐릭터가 총을 발사하는 로직을 실행합니다.
-function performShoot(shooter) {
+async function performShoot(shooter) {
     console.log("performShoot");
-    if (!shooter||isShooting||!hasGun)         {
-        console.log("hasGun:",hasGun,'무기가 없거나 공격 중입니다!');
-        console.log(isAttacking);
-    return;
+    if (!shooter || shootingInProgress || !hasGun) {
+        console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
+        return;
     }
-    isShooting = true;
+
+    shootingInProgress = true;
     const rightArm = shooter.getObjectByName("rightArm");
     if (rightArm) {
         const originalRotation = rightArm.rotation.x;
@@ -284,23 +312,34 @@ function performShoot(shooter) {
         const shootDownSpeed = 0.1;
 
         const animateShootUp = () => {
-            rightArm.rotation.x = originalRotation - shootMotion.x;
-            if (shootMotion.x < Math.PI / 2) {
-                shootMotion.x += shootUpSpeed;
-                requestAnimationFrame(animateShootUp);
-            } else {
-                setTimeout(shootBullet, 50);
-            }
+            return new Promise(resolve => {
+                const shootUp = () => {
+                    rightArm.rotation.x = originalRotation - shootMotion.x;
+                    if (shootMotion.x < Math.PI / 2) {
+                        shootMotion.x += shootUpSpeed;
+                        requestAnimationFrame(shootUp);
+                    } else {
+                        resolve();
+                    }
+                };
+                shootUp();
+            });
         };
 
         const animateShootDown = () => {
-            rightArm.rotation.x = originalRotation - shootMotion.x;
-            if (shootMotion.x > 0) {
-                shootMotion.x -= shootDownSpeed;
-                requestAnimationFrame(animateShootDown);
-            } else {
-                rightArm.rotation.x = originalRotation;
-            }
+            return new Promise(resolve => {
+                const shootDown = () => {
+                    rightArm.rotation.x = originalRotation - shootMotion.x;
+                    if (shootMotion.x > 0) {
+                        shootMotion.x -= shootDownSpeed;
+                        requestAnimationFrame(shootDown);
+                    } else {
+                        rightArm.rotation.x = originalRotation;
+                        resolve();
+                    }
+                };
+                shootDown();
+            });
         };
 
         const shootBullet = () => {
@@ -314,16 +353,16 @@ function performShoot(shooter) {
             shooter.getWorldDirection(direction);
             bullet.userData.velocity = direction.multiplyScalar(0.2);
             bullet.userData.startPosition = bullet.position.clone();
-
-            animateShootDown();
         };
 
-        animateShootUp();
+        await animateShootUp();
+        shootBullet();
+        await animateShootDown();
     } else {
-            console.error("오른팔을 찾을 수 없습니다.");
-            isShooting = false; // 오류 발생 시 shooting 상태 초기화
-        }
-    isShooting = false;
+        console.error("오른팔을 찾을 수 없습니다.");
+    }
+
+    shootingInProgress = false;
 }
 
 function createBullet() {

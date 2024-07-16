@@ -56,6 +56,8 @@ function init() {
     submitText = document.getElementById('submitText');
     questionBox = document.getElementById('questionBox');
     confirmButton = document.getElementById('confirmButton');
+
+
     
     submitText.addEventListener('click', () => {
         const text = inputText.value;

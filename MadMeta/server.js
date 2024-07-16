@@ -9,7 +9,7 @@ const port = 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-app.listen(port, '143.248.226.168', () => {
+app.listen(port, '143.248.226.153', () => {
 
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
@@ -145,6 +145,12 @@ wss.on('connection', (ws) => {
         }));
       }
     }
+    // 게임 스타트 이벤트 처리
+    // 일단 3 2 1  start 카운트 처리하기
+    if (data.type === "gameStart"){
+      sendGameStartSequence();
+    }
+    
     // // 아이템 스위칭 이벤트 처리
     // if(data.type === 'switchItem'){
     //   //아이템이 사용중인지 확인
@@ -167,5 +173,27 @@ wss.on('connection', (ws) => {
     broadcast(JSON.stringify({ type: 'removePlayer', id }));
   });
 });
+
+//gameSequence 보내기
+function sendGameStartSequence() {
+  let count = 3;
+
+  const countdown = setInterval(() => {
+      if (count > 0) {
+          broadcast(JSON.stringify({
+              type: 'readyForGame',
+              state: count.toString()
+          }));
+          count--;
+      } else {
+          clearInterval(countdown);
+          broadcast(JSON.stringify({
+              type: 'readyForGame',
+              state: 'gamestart'
+          }));
+      }
+  }, 1000);
+}
+
 
 console.log('WebSocket server is running on ws://localhost:8080');
