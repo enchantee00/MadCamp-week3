@@ -2,12 +2,19 @@ let bullets = [];
 const keyState = {};
 let items = {}; // 로컬 아이템 관리
 
+let myLocalCharacter = null;
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
 
 //start button
 let startButton, gameCountText;
+
+
+let characterIndex = 0; // 현재 선택된 캐릭터 인덱스
+let characters; // players 객체의 캐릭터 리스트
+let isInputBlocked = false; // 입력을 막는 플래그
+
 
 // WebSocket 연결 설정
 const ws = new WebSocket('ws://143.248.226.153:8080');
@@ -157,7 +164,22 @@ ws.onmessage = (message) => {
             console.log();
             performShoot(shooter);
         }
-    } else if (data.type === 'itemRemoved') {
+    }else if(data.type === "death"){
+        const player = players[data.playerId];
+        if(player){
+            player.hp = 0;
+            updateHPBar(player);
+            player.rotation.x = Math.PI /2 ;
+            if(player == localCharacter){
+                console.log("내가 죽었어용!");
+                //방향키에 따라 시점 변경 구현하기
+                myLocalCharacter = localCharacter;
+                blockInput(true);
+                localCharacter = characters[0];
+
+            }
+        }
+    }  else if (data.type === 'itemRemoved') {
         console.log("gameState: itemRemoved");
         // 아이템 제거 이벤트 처리
         removeItemFromScene(data.itemId);
@@ -170,18 +192,8 @@ ws.onmessage = (message) => {
             updatePlayerWeapon(player, data.weapon);
             console.log(`Player ${data.playerId} weapon updated to ${data.weapon}`);
         }
-    //game start 이벤트 처리
-    }else if(data.type === "death"){
-        const player = players[data.playerId];
-        if(player){
-            player.hp = 0;
-            updateHPBar(player);
-            player.rotation.x = Math.PI /2 ;
-            if(player == localCharacter){
-                console.log("내가 죽었어용!");
-            }
-        }
-    } 
+    //death 이벤트 처리
+    }
     
     else if (data.type ==="readyForGame"){
         console.log(data.state);
@@ -219,18 +231,20 @@ ws.onmessage = (message) => {
         // console.log(playersInServer);
         // console.log(players);
         for (let clientId in players) {
-            
+            //플레이어들 상태 복귀시키기.
             if (players.hasOwnProperty(clientId)) {
               players[clientId].weapon = playersInServer[clientId].weapon;
-
               players[clientId].hp = 100;
               updateHPBar(players[clientId]);
-            //   players[clientId].rotation.x = 0;
-            //   players[clientId].position.y = 0.6;
+              players[clientId].rotation.x = 0;
+              players[clientId].position.y = 0.6;
               updatePlayerWeapon(players[clientId], null);
-            //   updatePlayerWeapon(localCharacter,null);
             }
         }
+        if(myLocalCharacter){
+            localCharacter = myLocalCharacter;
+        }
+        blockInput(false);
         
     }
 };
@@ -242,6 +256,55 @@ ws.onclose = () => {
         delete players[id];
     });
 };
+
+
+
+// 키보드 입력을 처리하는 함수
+function handleKeydown(event) {
+    const key = event.key.toLowerCase();
+    keyState[event.code] = true;
+
+    if (isInputBlocked) {
+        event.preventDefault();
+        if (key === 'arrowleft') {
+            // 왼쪽 방향키를 누르면 이전 캐릭터로 변경
+            changeCharacter(-1);
+        } else if (key === 'arrowright') {
+            // 오른쪽 방향키를 누르면 다음 캐릭터로 변경
+            changeCharacter(1);
+        } else {
+            console.log(`${key.toUpperCase()} key pressed but no action defined.`);
+        }
+    }
+}
+
+// 키보드 입력을 해제하는 함수
+function handleKeyup(event) {
+    keyState[event.code] = false;
+}
+
+// localCharacter를 변경하는 함수
+function changeCharacter(direction) {
+    characters = Object.values(players);
+    characterIndex = (characterIndex + direction + characters.length) % characters.length;
+    localCharacter = characters[characterIndex];
+    console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
+}
+
+
+// 키보드 이벤트 리스너 추가
+document.addEventListener('keydown', handleKeydown);
+document.addEventListener('keyup', handleKeyup);
+
+// 입력을 막는 함수
+function blockInput(block) {
+    isInputBlocked = block;
+}
+
+
+
+
+
 
 function sendUpdate() {
     if (localCharacter) {

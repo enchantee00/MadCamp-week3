@@ -32,7 +32,23 @@ let players = { // dummy 플레이어 추가
         rotation: { y: 0 },
         weapon: null,
         state: "alive"
-    }
+    },
+    dummy1: {
+      id: 'dummy1',
+      hp: 100,
+      position: { x: 5, y: 0.6, z: -8 },
+      rotation: { y: 0 },
+      weapon: null,
+      state: "alive"
+  },
+  dummy2: {
+    id: 'dummy2',
+    hp: 100,
+    position: { x: 6, y: 0.6, z: -8 },
+    rotation: { y: 0 },
+    weapon: null,
+    state: "alive"
+}
 };
 let items = { // dummy 아이템 추가
     // itemId1: { type: 'gun', position: { x: 6, y: 0.5, z: -6 } },
@@ -179,7 +195,7 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(10);
+          broadcastRemainingTime(60);
 
       });
     }
