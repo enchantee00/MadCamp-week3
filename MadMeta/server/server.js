@@ -7,6 +7,8 @@ const app = express();
 const port = 3000;
 
 
+let gameOn = false;
+
 // 
 
 
@@ -157,6 +159,10 @@ wss.on('connection', (ws) => {
     // 일단 3 2 1  start 카운트 처리하기
     // 아이템 뿌리고 시작
     if (data.type === "gameStart") {
+
+      if(gameOn) return;
+      gameOn = true;
+
       sendGameStartSequence().then(() => {
           items = generateRandomItems(20);
           console.log(items.length);
@@ -164,15 +170,9 @@ wss.on('connection', (ws) => {
               type: "itemDistribution",
               items: items
           }));
-          // 5초 후에 다른 메시지를 broadcast
-          setTimeout(() => {
-            resetWeapons();
-            broadcast(JSON.stringify({
-                type: "gameOver",
-                players: players
-            }));
-            
-        }, 5000); // 5000ms = 5초
+
+          broadcastRemainingTime(30);
+
       });
   }
   
@@ -255,6 +255,32 @@ function resetWeapons() {
       players[id].weapon = null;
     }
   }
+}
+//game 남은 시간 세기
+function broadcastRemainingTime(n) {
+  let remainingTime = n;
+  
+  // n초 동안 remainingTime을 broadcast
+  const intervalId = setInterval(() => {
+      if (remainingTime > 0) {
+          broadcast(JSON.stringify({
+              type: "remainingTime",
+              time: remainingTime
+          }));
+          remainingTime--;
+      }
+  }, 1000); // 1000ms = 1초
+
+  // n초 후에 다른 메시지를 broadcast하고 interval을 종료
+  setTimeout(() => {
+      clearInterval(intervalId);
+      resetWeapons();
+      broadcast(JSON.stringify({
+          type: "gameOver",
+          players: players
+      }));
+  }, n * 1000); // n초 후에 실행
+  gameOn = false;
 }
 
 console.log('WebSocket server is running on ws://localhost:8080');

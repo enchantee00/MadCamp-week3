@@ -3,18 +3,21 @@ const players = {}; // 모든 플레이어들을 저장할 객체
 let weapon = null;
 let gun = null;
 let currentWeapon = null;
+
 let hasSword = false;
 let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
+let isJumping = false;
+let jumpStartTime = null;
 
-navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-        localStream = stream;
-    })
-    .catch(error => {
-        console.error('Error accessing audio stream', error);
-    });
+// navigator.mediaDevices.getUserMedia({ audio: true })
+//     .then(stream => {
+//         localStream = stream;
+//     })
+//     .catch(error => {
+//         console.error('Error accessing audio stream', error);
+//     });
 
 
 // HP 바 생성 함수
@@ -232,8 +235,7 @@ function shoot() {
     sendShoot(localCharacter);
 }
 
-let isJumping = false;
-let jumpStartTime = null;
+
 
 function moveCharacter() {
     if (!localCharacter) return;
