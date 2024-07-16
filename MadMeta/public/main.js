@@ -339,6 +339,8 @@ function animate() {
     updateBullets(); // 총알 업데이트
     // controls.update(); // OrbitControls 업데이트
 
+
+
     let characterNearWhiteboard = false;
 
     classrooms.forEach(classroom => {
@@ -347,7 +349,7 @@ function animate() {
             const player = players[id];
             // 화이트보드 가까이 있는지 확인
             if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
-                console.log("가까움 시발");
+              
                 characterNearWhiteboard = true;
                 currentWhiteboard = classroom.whiteboard;
             }

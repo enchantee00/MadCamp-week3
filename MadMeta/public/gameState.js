@@ -193,6 +193,11 @@ function sendShoot() {
 
 
 let attackInProgress = false;
+function animateAttack() {
+    if (attackInProgress) {
+        requestAnimationFrame(animateAttack);
+    }
+}
 
 function performAttack(attacker) {
     console.log("performattack");
@@ -202,7 +207,8 @@ function performAttack(attacker) {
     }
 
     attackInProgress = true;
-
+    //루프 시작
+    animateAttack();
     // 공격 애니메이션 및 논리를 추가합니다.
     const rightArm = attacker.getObjectByName("rightArm");
     if (rightArm) {

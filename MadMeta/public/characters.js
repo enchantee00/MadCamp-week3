@@ -113,6 +113,9 @@ function createCharacter(id,isLocal = false) {
     textSprite.position.set(0, 2.0, 0); // HP 바 위에 텍스트 위치
     character.add(textSprite);
 
+    // 초기 위치 설정
+    character.position.set(0,0.6,0);
+
     scene.add(character);
     character.updateWorldMatrix(true, false);
 
@@ -196,6 +199,9 @@ function shoot() {
     sendShoot(localCharacter);
 }
 
+let isJumping = false;
+let jumpStartTime = null;
+
 function moveCharacter() {
     if (!localCharacter) return;
 
@@ -216,6 +222,26 @@ function moveCharacter() {
         direction.z -= speed;
     }
 
+    // L 키가 눌렸을 때 점프 애니메이션 시작
+    if (keyState["KeyL"] && !isJumping) {
+        isJumping = true;
+        jumpStartTime = Date.now();
+    }
+
+    // 점프 애니메이션 처리
+    if (isJumping) {
+        const elapsedTime = Date.now() - jumpStartTime;
+        const duration = 500; // 0.5초
+
+        if (elapsedTime < duration / 2) {
+            localCharacter.position.y = 2 * (elapsedTime / (duration / 2)) + 0.6; // 첫 0.25초 동안 y 값을 1로 증가
+        } else if (elapsedTime < duration) {
+            localCharacter.position.y = 2 * (1 - (elapsedTime - duration / 2) / (duration / 2))+0.6;  // 다음 0.25초 동안 y 값을 1에서 0으로 감소
+        } else {
+            localCharacter.position.y = 0.6; // 애니메이션 완료 후 초기화
+            isJumping = false; // 애니메이션 완료 후 상태 초기화
+        }
+    }
     if (direction.length() > 0) {
         direction.applyQuaternion(localCharacter.quaternion);
         localCharacter.position.add(direction);
@@ -252,4 +278,6 @@ function moveCharacter() {
 
     // 아이템 접근 감지
     detectItemPickup();
+
+    // requestAnimationFrame(moveCharacter);
 }
