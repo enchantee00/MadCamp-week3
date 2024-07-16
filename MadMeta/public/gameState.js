@@ -17,7 +17,7 @@ let isInputBlocked = false; // 입력을 막는 플래그
 
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.153:8080');
+const ws = new WebSocket('ws://143.248.226.10:8080');
 
 function init(){
     document.addEventListener('DOMContentLoaded', () => {
@@ -93,6 +93,18 @@ ws.onmessage = (message) => {
                 console.log(players[clientId]);
 
             });
+        }
+        if (data.whiteboard) {
+            console.log("init", data.whiteboard);
+            const whiteboards = data.whiteboard;
+            
+            for (const id in whiteboards) {
+                if (classrooms[id-1]) {
+                    console.log(id)
+                    updateWhiteboardTexture(classrooms[id-1].whiteboard, whiteboards[id]);
+                }
+            }
+       
         }
 
 
@@ -246,6 +258,11 @@ ws.onmessage = (message) => {
         }
         blockInput(false);
         
+    } else if (data.type === 'whiteboardUpdate') {
+        const { whiteboardId, text } = data;
+        if (classrooms[whiteboardId]) {
+            updateWhiteboardTexture(classrooms[whiteboardId-1].whiteboard, text);
+        }
     }
 };
 
@@ -638,4 +655,13 @@ function updatePlayerWeapon(player, weapon) {
     }
 }
 
-
+//칠판 업데이트 함수
+// 화이트보드 텍스처 업데이트 함수
+function sendWhiteboard(whiteboard, text) {
+    // 서버로 화이트보드 업데이트 메시지 전송
+    ws.send(JSON.stringify({
+        type: 'whiteboardUpdate',
+        whiteboard: whiteboard,
+        text: text
+    }));
+}

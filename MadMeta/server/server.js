@@ -15,7 +15,7 @@ let gameOn = false;
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-app.listen(port, '143.248.226.153', () => {
+app.listen(port, '143.248.226.10', () => {
 
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
@@ -50,6 +50,7 @@ let players = { // dummy 플레이어 추가
     state: "alive"
 }
 };
+let whiteboards = {};
 let items = { // dummy 아이템 추가
     // itemId1: { type: 'gun', position: { x: 6, y: 0.5, z: -6 } },
     // itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } },
@@ -76,7 +77,7 @@ wss.on('connection', (ws) => {
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보와 아이템 정보 전달
-  ws.send(JSON.stringify({ type: 'init', states: players }));
+  ws.send(JSON.stringify({ type: 'init', states: players, whiteboard: whiteboards}));
 
   // 새로운 플레이어 정보를 players 객체에 추가ㅁㅈ
   players[id] = {
@@ -198,6 +199,15 @@ wss.on('connection', (ws) => {
           broadcastRemainingTime(60);
 
       });
+    }
+
+    if (data.type === 'whiteboardUpdate') {
+      whiteboards[data.whiteboard.whiteboardId] = data.text;
+      broadcast(JSON.stringify({
+        type: 'whiteboardUpdate',
+        whiteboardId: data.whiteboard.whiteboardId,
+        text: data.text
+      }));
     }
 
   });
