@@ -56,6 +56,8 @@ function init() {
     submitText = document.getElementById('submitText');
     questionBox = document.getElementById('questionBox');
     confirmButton = document.getElementById('confirmButton');
+
+
     
     submitText.addEventListener('click', () => {
         const text = inputText.value;
@@ -288,20 +290,21 @@ window.addEventListener('keyup', (event) => {
 });
 
 // 캐릭터 간 충돌 감지 함수
-// function detectCharacterCollision() {
-//     if (localCharacter) {
-//         const localBox = new THREE.Box3().setFromObject(localCharacter);
-//         for (const id in players) {
-//             const player = players[id];
-//             if (player) {
-//                 const playerBox = new THREE.Box3().setFromObject(player);
-//                 if (localBox.intersectsBox(playerBox)) {
-//                     // console.log('충돌!');
-//                 }
-//             }
-//         }
-//     }
-// }
+function detectCharacterCollision() {
+    if (localCharacter) {
+        const localBox = new THREE.Box3().setFromObject(localCharacter);
+        Object.keys(players).forEach(id => {
+            const player = players[id];
+            if (player) {
+                const playerBox = new THREE.Box3().setFromObject(player);
+                if (localBox.intersectsBox(playerBox)) {
+                    // console.log('충돌!');
+                }
+            }
+        });
+    }
+}
+
 
 // 카메라가 로컬 캐릭터를 따라가도록 설정
 function followCharacter() {
@@ -329,7 +332,6 @@ function followCharacter() {
     // controls.target.copy(localCharacter.position);
 }
 
-// 애니메이션 루프
 function animate() {
     requestAnimationFrame(animate);
     moveCharacter(); // 로컬 캐릭터 이동
@@ -337,6 +339,7 @@ function animate() {
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
     // controls.update(); // OrbitControls 업데이트
+
 
 
     let characterNearWhiteboard = false;
@@ -382,11 +385,11 @@ function animate() {
             localBar.lookAt(camera.position);
         }
     }
-    
+
     renderer.render(scene, camera);
     sendUpdate();
-
 }
+
 animate();
 
 
