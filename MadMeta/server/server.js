@@ -30,8 +30,25 @@ let players = { // dummy 플레이어 추가
         hp: 100,
         position: { x: 4, y: 0.6, z: -8 },
         rotation: { y: 0 },
-        weapon: null
-    }
+        weapon: null,
+        state: "alive"
+    },
+    dummy1: {
+      id: 'dummy1',
+      hp: 100,
+      position: { x: 5, y: 0.6, z: -8 },
+      rotation: { y: 0 },
+      weapon: null,
+      state: "alive"
+  },
+  dummy2: {
+    id: 'dummy2',
+    hp: 100,
+    position: { x: 6, y: 0.6, z: -8 },
+    rotation: { y: 0 },
+    weapon: null,
+    state: "alive"
+}
 };
 let whiteboards = {};
 let items = { // dummy 아이템 추가
@@ -123,6 +140,13 @@ wss.on('connection', (ws) => {
         // HP 감소
         players[data.targetId].hp = (players[data.targetId].hp || 100) - data.damage;
 
+        if(players[data.targetId].hp == 0){
+          console.log("player death", players[data.targetId]);
+          broadcast(JSON.stringify({
+            type:"death",
+            playerId : data.targetId
+          }))
+        }
         // 모든 클라이언트에게 브로드캐스트
         broadcast(JSON.stringify({
           type: 'damage',
@@ -172,7 +196,7 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(30);
+          broadcastRemainingTime(60);
 
       });
     }
@@ -185,22 +209,7 @@ wss.on('connection', (ws) => {
         text: data.text
       }));
     }
-  
 
-    // // 아이템 스위칭 이벤트 처리
-    // if(data.type === 'switchItem'){
-    //   //아이템이 사용중인지 확인
-    //   if(usingItems[data.itemId]){
-    //     //usingItem에서 items로 옮기기
-    //     items[data.itemId] = usingItems[data.itemId]
-    //     delete usingItems[data.itemId];
-
-    //     //아이템을 플레이어에게 할당
-    //     players[data.itemId].weapon = data.itemId;
-
-    //     broadcast
-    //   }
-    // }
   });
 
   ws.on('close', () => {
@@ -259,10 +268,11 @@ function generateRandomItems(n) {
   }
   return items;
 }
-function resetWeapons() {
+function resetPlayers() {
   for (let id in players) {
     if (players.hasOwnProperty(id)) {
       players[id].weapon = null;
+      players[id].hp = 100;
     }
   }
 }
@@ -284,7 +294,7 @@ function broadcastRemainingTime(n) {
   // n초 후에 다른 메시지를 broadcast하고 interval을 종료
   setTimeout(() => {
       clearInterval(intervalId);
-      resetWeapons();
+      resetPlayers();
       broadcast(JSON.stringify({
           type: "gameOver",
           players: players
