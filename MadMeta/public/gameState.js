@@ -75,6 +75,7 @@ ws.onmessage = (message) => {
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
+                    character.state = state.state;
                     players[clientId] = character; 
                     players[clientId].weapon = state.weapon;
 
@@ -170,7 +171,19 @@ ws.onmessage = (message) => {
             console.log(`Player ${data.playerId} weapon updated to ${data.weapon}`);
         }
     //game start 이벤트 처리
-    } else if (data.type ==="readyForGame"){
+    }else if(data.type === "death"){
+        const player = players[data.playerId];
+        if(player){
+            player.hp = 0;
+            updateHPBar(player);
+            player.rotation.x = Math.PI /2 ;
+            if(player == localCharacter){
+                console.log("내가 죽었어용!");
+            }
+        }
+    } 
+    
+    else if (data.type ==="readyForGame"){
         console.log(data.state);
         toggleGameCount(true, data.state);
     // gameStart! 아이템 시작;    
@@ -212,8 +225,8 @@ ws.onmessage = (message) => {
 
               players[clientId].hp = 100;
               updateHPBar(players[clientId]);
-              players[clientId].rotation.x = 0;
-              players[clientId].position.y = 0.6;
+            //   players[clientId].rotation.x = 0;
+            //   players[clientId].position.y = 0.6;
               updatePlayerWeapon(players[clientId], null);
             //   updatePlayerWeapon(localCharacter,null);
             }
@@ -349,7 +362,7 @@ function performAttack(attacker) {
 
                         if (player.hp <= 0) {
                             player.hp = 0;
-                            player.rotation.x = Math.PI / 2;
+                            // player.rotation.x = Math.PI / 2;
                         }
 
                         ws.send(JSON.stringify({
@@ -437,7 +450,7 @@ async function performShoot(shooter) {
 
             const direction = new THREE.Vector3();
             shooter.getWorldDirection(direction);
-            bullet.userData.velocity = direction.multiplyScalar(0.2);
+            bullet.userData.velocity = direction.multiplyScalar(0.1);
             bullet.userData.startPosition = bullet.position.clone();
         };
 

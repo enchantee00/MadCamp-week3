@@ -30,7 +30,8 @@ let players = { // dummy 플레이어 추가
         hp: 100,
         position: { x: 4, y: 0.6, z: -8 },
         rotation: { y: 0 },
-        weapon: null
+        weapon: null,
+        state: "alive"
     }
 };
 let items = { // dummy 아이템 추가
@@ -122,6 +123,13 @@ wss.on('connection', (ws) => {
         // HP 감소
         players[data.targetId].hp = (players[data.targetId].hp || 100) - data.damage;
 
+        if(players[data.targetId].hp == 0){
+          console.log("player death", players[data.targetId]);
+          broadcast(JSON.stringify({
+            type:"death",
+            playerId : data.targetId
+          }))
+        }
         // 모든 클라이언트에게 브로드캐스트
         broadcast(JSON.stringify({
           type: 'damage',
