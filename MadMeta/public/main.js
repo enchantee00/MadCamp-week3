@@ -348,7 +348,7 @@ function animate() {
         for (const id in players) {
             const player = players[id];
             // 화이트보드 가까이 있는지 확인
-            if (player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5 || localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) {
+            if (player&&(player.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5) || localCharacter&&(localCharacter.position.distanceTo(classroom.whiteboard.whiteboard.position) < 5)) {
               
                 characterNearWhiteboard = true;
                 currentWhiteboard = classroom.whiteboard;

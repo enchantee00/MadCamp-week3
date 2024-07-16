@@ -1,5 +1,6 @@
 let bullets = [];
 const keyState = {};
+let items = {}; // 로컬 아이템 관리
 // const peerConnections = {};
 // const audioElements = {};
 // const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -27,6 +28,7 @@ function init(){
                 type: 'gameStart',
                 id : ws.id
             }));
+            document.activeElement.blur();
         });
     });
     
@@ -60,17 +62,12 @@ ws.onmessage = (message) => {
                     } // 여기서 character 객체 추가
 
                 }
+                console.log(players[clientId]);
 
             });
         }
 
-        // 아이템 추가
-        if (data.items) {
-            Object.keys(data.items).forEach(itemId => {
-                const item = data.items[itemId];
-                createItem(itemId, item.type, item.position);
-            });
-        }
+
     } else if (data.type === 'connected') {
         // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
         ws.id = data.id;
@@ -94,6 +91,17 @@ ws.onmessage = (message) => {
         if (player) {
             player.position.set(data.position.x, data.position.y, data.position.z);
             player.rotation.y = data.rotation.y;
+                    // 걷는 모션 추가
+        const walkCycle = Math.sin(Date.now() / 100) * 0.2;
+        const leftLeg = player.children.find(child => child.geometry instanceof THREE.BoxGeometry && child.material.color.getHex() === 0xffc0cb && child.position.x < 0);
+        const rightLeg = player.children.find(child => child.geometry instanceof THREE.BoxGeometry && child.material.color.getHex() === 0xffc0cb && child.position.x > 0);
+        const leftArm = player.children.find(child => child.geometry instanceof THREE.BoxGeometry && child.material.color.getHex() === 0xffe0bd && child.position.x < 0);
+        const rightArm = player.children.find(child => child.geometry instanceof THREE.BoxGeometry && child.material.color.getHex() === 0xffe0bd && child.position.x > 0);
+
+        if (leftLeg) leftLeg.rotation.x = walkCycle;
+        if (rightLeg) rightLeg.rotation.x = -walkCycle;
+        if (leftArm) leftArm.rotation.x = -walkCycle;
+        if (rightArm &&!(attackInProgress||shootingInProgress)) rightArm.rotation.x = walkCycle;
         }
     } else if (data.type === 'damage') {
         console.log("gameState: damage");
@@ -140,6 +148,28 @@ ws.onmessage = (message) => {
     } else if (data.type ==="readyForGame"){
         console.log(data.state);
 
+    // gameStart! 아이템 시작;    
+    } else if(data.type === "itemDistribution"){
+        console.log(data.items);
+        // 아이템 추가
+        if (data.items) {
+            Object.keys(data.items).forEach(itemId => {
+                const item = data.items[itemId];
+                createItem(itemId, item.type, item.position);
+            });
+        }
+    //game이 끝나면 모든 아이템 지우기
+    } else if(data.type == "gameOver"){
+        console.log("gameover");
+        deleteAllItems();
+        for (let player in players) {
+            if (players.hasOwnProperty(id)) {
+              players[id].weapon = null;
+              updatePlayerWeapon(id, null);
+              updatePlayerWeapon(localCharacter,null);
+            }
+          }
+        
     }
 };
 
@@ -426,9 +456,19 @@ function createItem(itemId, type, position) {
     item.position.set(position.x, position.y, position.z);
     item.itemId = itemId;
     scene.add(item);
+
+    items[itemId] = item;
     return item;
 }
-
+function deleteAllItems() {
+    // 저장된 모든 아이템 삭제
+    for (let itemId in items) {
+        if (items.hasOwnProperty(itemId)) {
+            scene.remove(items[itemId]);
+            delete items[itemId];
+        }
+    }
+}
 function removeItemFromScene(itemId) {
     const item = scene.children.find(obj => obj.itemId === itemId);
     if (item) {

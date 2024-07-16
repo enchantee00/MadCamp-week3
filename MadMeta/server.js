@@ -6,6 +6,10 @@ const WebSocket = require('ws');
 const app = express();
 const port = 3000;
 
+
+// 
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 
@@ -28,10 +32,14 @@ let players = { // dummy 플레이어 추가
     }
 };
 let items = { // dummy 아이템 추가
-    itemId1: { type: 'sword', position: { x: 6, y: 0.5, z: -6 } },
-    itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } },
-    itemId3: { type: 'gun', position: { x: 10, y: 0.5, z: -6 } },
-    itemId4: { type: 'sword', position: { x: 12, y: 0.5, z: -6 } }
+    // itemId1: { type: 'gun', position: { x: 6, y: 0.5, z: -6 } },
+    // itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } },
+    // itemId3: { type: 'gun', position: { x: 10, y: 0.5, z: -6 } },
+    // itemId4: { type: 'gun', position: { x: 12, y: 0.5, z: -6 } },
+    // itemId5: { type: 'gun', position: { x: 16, y: 0.5, z: -6 } },
+    // itemId6: { type: 'gun', position: { x: 18, y: 0.5, z: -6 } },
+    // itemId7: { type: 'gun', position: { x: 20, y: 0.5, z: -6 } },
+    // itemId8: { type: 'gun', position: { x: 22, y: 0.5, z: -6 } }
 };
 let usingItems = {};
 // 모든 클라이언트에게 메시지를 브로드캐스트하는 함수
@@ -49,7 +57,7 @@ wss.on('connection', (ws) => {
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보와 아이템 정보 전달
-  ws.send(JSON.stringify({ type: 'init', states: players, items }));
+  ws.send(JSON.stringify({ type: 'init', states: players }));
 
   // 새로운 플레이어 정보를 players 객체에 추가ㅁㅈ
   players[id] = {
@@ -147,10 +155,28 @@ wss.on('connection', (ws) => {
     }
     // 게임 스타트 이벤트 처리
     // 일단 3 2 1  start 카운트 처리하기
-    if (data.type === "gameStart"){
-      sendGameStartSequence();
-    }
-    
+    // 아이템 뿌리고 시작
+    if (data.type === "gameStart") {
+      sendGameStartSequence().then(() => {
+          items = generateRandomItems(20);
+          console.log(items.length);
+          broadcast(JSON.stringify({
+              type: "itemDistribution",
+              items: items
+          }));
+          // 5초 후에 다른 메시지를 broadcast
+          setTimeout(() => {
+            resetWeapons();
+            broadcast(JSON.stringify({
+                type: "gameOver",
+                players: players
+            }));
+            
+        }, 5000); // 5000ms = 5초
+      });
+  }
+  
+
     // // 아이템 스위칭 이벤트 처리
     // if(data.type === 'switchItem'){
     //   //아이템이 사용중인지 확인
@@ -176,24 +202,59 @@ wss.on('connection', (ws) => {
 
 //gameSequence 보내기
 function sendGameStartSequence() {
-  let count = 3;
+  return new Promise((resolve) => {
+      let count = 3;
 
-  const countdown = setInterval(() => {
-      if (count > 0) {
-          broadcast(JSON.stringify({
-              type: 'readyForGame',
-              state: count.toString()
-          }));
-          count--;
-      } else {
-          clearInterval(countdown);
-          broadcast(JSON.stringify({
-              type: 'readyForGame',
-              state: 'gamestart'
-          }));
-      }
-  }, 1000);
+      const countdown = setInterval(() => {
+          if (count > 0) {
+              broadcast(JSON.stringify({
+                  type: 'readyForGame',
+                  state: count.toString()
+              }));
+              count--;
+          } else {
+              clearInterval(countdown);
+              broadcast(JSON.stringify({
+                  type: 'readyForGame',
+                  state: 'gamestart'
+              }));
+              resolve(); // Promise를 해결하여 후속 작업을 실행 가능하게 합니다.
+          }
+      }, 1000);
+  });
 }
 
+
+//game Item 뿌리기
+function getRandomPosition(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function getRandomItemType() {
+  const types = ['gun', 'sword'];
+  return types[Math.floor(Math.random() * types.length)];
+}
+
+function generateRandomItems(n) {
+  let items = {};
+  for (let i = 0; i < n; i++) {
+      const itemId = `itemId${i + 1}`;
+      const position = {
+          x: getRandomPosition(-60, 60),
+          y: 0.5,
+          z: getRandomPosition(-60, 60)
+      };
+      const type = getRandomItemType();
+      items[itemId] = { type: type, position: position };
+  }
+  return items;
+}
+function resetWeapons() {
+  for (let id in players) {
+    if (players.hasOwnProperty(id)) {
+      players[id].weapon = null;
+    }
+  }
+}
 
 console.log('WebSocket server is running on ws://localhost:8080');

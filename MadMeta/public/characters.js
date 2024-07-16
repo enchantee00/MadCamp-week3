@@ -239,7 +239,7 @@ function moveCharacter() {
             localCharacter.position.y = 2 * (1 - (elapsedTime - duration / 2) / (duration / 2))+0.6;  // 다음 0.25초 동안 y 값을 1에서 0으로 감소
         } else {
             localCharacter.position.y = 0.6; // 애니메이션 완료 후 초기화
-            isJumping = false; // 애니메이션 완료 후 상태 초기화
+            isJumping = false; // 애니메이션 완료 후 상태 초기화ㅈㅈㅈ
         }
     }
     if (direction.length() > 0) {
@@ -273,7 +273,7 @@ function moveCharacter() {
         if (leftLeg) leftLeg.rotation.x = walkCycle;
         if (rightLeg) rightLeg.rotation.x = -walkCycle;
         if (leftArm) leftArm.rotation.x = -walkCycle;
-        if (rightArm) rightArm.rotation.x = walkCycle;
+        if (rightArm&&!(attackInProgress||shootingInProgress)) rightArm.rotation.x = walkCycle;
     }
 
     // 아이템 접근 감지
