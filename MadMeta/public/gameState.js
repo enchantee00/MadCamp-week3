@@ -7,7 +7,7 @@ let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
 
 //start button
-let startButton;
+let startButton, gameCountText;
 
 // WebSocket 연결 설정
 const ws = new WebSocket('ws://143.248.226.153:8080');
@@ -16,7 +16,6 @@ function init(){
     document.addEventListener('DOMContentLoaded', () => {
         // 새 버튼 요소 가져오기
         const startButton = document.getElementById('startButton');
-    
         // 클릭 이벤트 리스너 추가
         startButton.addEventListener('click', () => {
             console.log('Start Button Clicked');
@@ -32,6 +31,30 @@ function init(){
 
 }
 init();
+
+function toggleGameCount(show, text) {
+    const gameCountText = document.getElementById('gameCountText');
+    const gameCount = document.getElementById("gameCount");
+    if(gameCountText){
+        gameCountText.textContent=text;
+    }
+
+    if (show) {
+        gameCount.classList.add('show');
+    } else {
+        gameCount.classList.remove('show');
+    }
+}
+function showRemainingTime(show,time) {
+    const countingBox = document.getElementById('countingBox');
+    const remaingTime = document.getElementById("remainingTime");
+    if (show) {
+        countingBox.style.display = 'block';
+        remaingTime.textContent = time;
+    } else {
+        countingBox.style.display = 'none';
+    }
+}
 
 ws.onopen = () => {
     console.log('WebSocket 연결이 열렸습니다.');
@@ -52,16 +75,17 @@ ws.onmessage = (message) => {
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
-                    players[clientId] = character; 
-                    if(state.weapon){
-                        players[clientId].weapon = state.weapon;
-                        updatePlayerWeapon(character,state.weapon);
-                    } // 여기서 character 객체 추가
+                    players[clientId].character = character; 
+
+                    players[clientId].state = state;
+
+                    updatePlayerWeapon(character,state.weapon);
+                    // 여기서 character 객체 추가
 
                 }
                 console.log(players[clientId]);
 
-            });
+            });ㅇ
         }
 
 
@@ -69,6 +93,7 @@ ws.onmessage = (message) => {
         // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
         ws.id = data.id;
         createCharacter(ws.id,true); // 로컬 캐릭터 생성
+        players[ws.id] = localCharacter;
         // console.log("gameState: data->connected");
     } else if (data.type === 'newPlayer') {
         // 새로운 플레이어 추가 (현재 클라이언트 자신은 제외)
@@ -125,7 +150,7 @@ ws.onmessage = (message) => {
     } else if (data.type === 'shoot') {
         console.log("gameState: shoot");
         // 총 발사 이벤트 처리
-        const shooter = players[data.id];
+        const shooter = players[data.id].character;
         if (shooter) {
             performShoot(shooter);
         }
@@ -145,28 +170,45 @@ ws.onmessage = (message) => {
     //game start 이벤트 처리
     } else if (data.type ==="readyForGame"){
         console.log(data.state);
-
+        toggleGameCount(true, data.state);
     // gameStart! 아이템 시작;    
-    } else if(data.type === "itemDistribution"){
-        console.log(data.items);
-        // 아이템 추가
-        if (data.items) {
-            Object.keys(data.items).forEach(itemId => {
-                const item = data.items[itemId];
-                createItem(itemId, item.type, item.position);
-            });
-        }
+    } else if (data.type === "itemDistribution") {
+        setTimeout(() => {
+            // toggleGameCount(true, "Game Start!");
+            
+            // toggleGameCount(true)가 완료된 후 실행할 코드
+            toggleGameCount(false);
+
+            console.log(data.items);
+            
+            // 아이템 추가
+            if (data.items) {
+                Object.keys(data.items).forEach(itemId => {
+                    const item = data.items[itemId];
+                    createItem(itemId, item.type, item.position);
+                });
+            }
+        }, 500);
+    //gamecounting
+    }else if(data.type === 'remainingTime'){
+        // console.log(data.remainingTime);
+        showRemainingTime(true, data.time);
+    
+
     //game이 끝나면 모든 아이템 지우기
-    } else if(data.type == "gameOver"){
+    } else if(data.type === "gameOver"){
         console.log("gameover");
+        showRemainingTime(false);
         deleteAllItems();
-        for (let player in players) {
-            if (players.hasOwnProperty(id)) {
-              players[id].weapon = null;
-              updatePlayerWeapon(id, null);
+        for (let clientId in players) {
+            if (players.hasOwnProperty(clientId)) {
+              players[clientId].weapon = null;
+              updatePlayerWeapon(players[clientId].character, null);
               updatePlayerWeapon(localCharacter,null);
             }
-          }
+        }
+        hasGun = false;
+        hasSword = false;
         
     }
 };
@@ -474,10 +516,10 @@ function removeItemFromScene(itemId) {
         scene.remove(item);
     }
 }
-
 // 무기 업데이트 함수
 function updatePlayerWeapon(player, weapon) {
     console.log(player, weapon,"updatePlayerWeapon");
+    if(!player) return;
     const rightArm = player.getObjectByName("rightArm");
     if (rightArm) {
         // 기존 무기를 제거
@@ -497,6 +539,9 @@ function updatePlayerWeapon(player, weapon) {
             weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
             hasGun = true;
+            hasSword = false;
+        } else{
+            hasGun = false;
             hasSword = false;
         }
         const newWeapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
