@@ -88,6 +88,64 @@ function createLamp(scene, x, y, z) {
     scene.add(light);
 }
 
+function createGazebo(x, z) {
+    const roofGeometry = new THREE.CylinderGeometry(5, 5, 1, 6);
+    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.position.set(x, 5, z);
+    scene.add(roof);
+
+    const pillarGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 32);
+    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x696969 });
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+        pillar.position.set(x + Math.cos(angle) * 4.5, 2.5, z + Math.sin(angle) * 4.5);
+        scene.add(pillar);
+    }
+}
+
+function createStatue(x, z) {
+    const baseGeometry = new THREE.BoxGeometry(2, 1, 2);
+    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x696969 });
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.position.set(x, 0.5, z);
+    scene.add(base);
+
+    const statueGeometry = new THREE.BoxGeometry(1, 3, 1);
+    const statueMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+    const statue = new THREE.Mesh(statueGeometry, statueMaterial);
+    statue.position.set(x, 2, z);
+    scene.add(statue);
+}
+
+function createFlowerBed(x, z) {
+    const bedGeometry = new THREE.BoxGeometry(8, 0.5, 8);
+    const bedMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+    const bed = new THREE.Mesh(bedGeometry, bedMaterial);
+    bed.position.set(x, 0.25, z);
+    scene.add(bed);
+
+    const flowerGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 12);
+    const flowerMaterial = new THREE.MeshBasicMaterial({ color: 0xFF69B4 });
+    for (let i = -3; i <= 3; i++) {
+        for (let j = -3; j <= 3; j++) {
+            const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
+            flower.position.set(x + i, 1, z + j);
+            scene.add(flower);
+        }
+    }
+}
+
+function createPond(x, z) {
+    const pondGeometry = new THREE.CylinderGeometry(10, 10, 1, 32);
+    const pondMaterial = new THREE.MeshBasicMaterial({ color: 0x1E90FF });
+    const pond = new THREE.Mesh(pondGeometry, pondMaterial);
+    pond.position.set(x, 0.5, z);
+    scene.add(pond);
+}
+
+
 // 충돌 감지 함수
 function detectCollision(object, targetArray) {
     if (object) {
@@ -256,7 +314,6 @@ function updateTimeText() {
 }
 
 function addChatMessage(name, message) {
-    console.log(message);
     const messageElement = document.createElement('div');
     messageElement.className = 'chat-message';
     messageElement.textContent = `${name}: ${message}`;
@@ -266,10 +323,11 @@ function addChatMessage(name, message) {
 
 
 function createChatBubble(playerId, message) {
-    if (!players[playerId] || !players[playerId].character) return;
+    if (!players[playerId]) return;
 
-    const player = players[playerId].character;
+    const player = players[playerId]
     let chatBubble = chatBubbles[playerId];
+    console.log("chat player", player);
 
     if (!chatBubble) {
         const div = document.createElement('div');
@@ -285,8 +343,20 @@ function createChatBubble(playerId, message) {
         chatBubbles[playerId] = chatBubble;
     }
 
+    console.log(chatBubble);
+
     chatBubble.element.textContent = message;
     chatBubble.element.style.display = 'block';
+
+    // const playerPosition = players[playerId].position.clone();
+    // const screenPosition = playerPosition.project(camera);
+
+    // const screenX = (window.innerWidth / 2) * (screenPosition.x + 1);
+    // const screenY = (window.innerHeight / 2) * (-screenPosition.y + 1);
+
+    // chatBubble.element.style.left = `${screenX}px`;
+    // chatBubble.element.style.top = `${screenY - 50}px`; // 말풍선이 캐릭터 머리 위에 위치하도록 조정
+
 
     if (chatBubble.timeout) clearTimeout(chatBubble.timeout);
     chatBubble.timeout = setTimeout(() => {

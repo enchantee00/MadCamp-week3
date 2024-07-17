@@ -37,8 +37,6 @@ function init(){
             document.activeElement.blur();
         });
     });
-    
-
 }
 init();
 
@@ -287,6 +285,7 @@ ws.onmessage = (message) => {
             updateWhiteboardTexture(classrooms[whiteboardId-1].whiteboard, text);
         }
     } else if(data.type === 'chat') {
+        // chatBubbles[data.id] = data.message;
         createChatBubble(data.id, data.message);
         addChatMessage(data.name, data.message);
     }

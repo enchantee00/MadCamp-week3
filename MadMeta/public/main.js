@@ -38,11 +38,47 @@ scene.add(directionalLight);
 scene.background = new THREE.Color(0x87CEEB); // 하늘색 배경 설정
 
 // 바닥 추가 (광장)
+const floorWidth = 200;
+const floorDepth = 150;
 const floorGeometry = new THREE.PlaneGeometry(200, 150); // 광장을 더 작게 설정
 const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 }); // 광장을 잔디색으로 설정
 const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
+
+function createBoundaryWalls() {
+    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, visible: false }); // 보이지 않는 벽
+    const wallThickness = 1;
+    const wallHeight = 20;
+
+    // 앞쪽 벽
+    const frontWall = new THREE.Mesh(new THREE.BoxGeometry(floorGeometry.parameters.width, wallHeight, wallThickness), wallMaterial);
+    frontWall.position.set(0, wallHeight / 2, floorGeometry.parameters.height / 2);
+    scene.add(frontWall);
+    collisionObjects.push(frontWall);
+
+    // 뒤쪽 벽
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorGeometry.parameters.width, wallHeight, wallThickness), wallMaterial);
+    backWall.position.set(0, wallHeight / 2, -floorGeometry.parameters.height / 2);
+    scene.add(backWall);
+    collisionObjects.push(backWall);
+
+    // 왼쪽 벽
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, floorGeometry.parameters.height), wallMaterial);
+    leftWall.position.set(-floorGeometry.parameters.width / 2, wallHeight / 2, 0);
+    scene.add(leftWall);
+    collisionObjects.push(leftWall);
+
+    // 오른쪽 벽
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, floorGeometry.parameters.height), wallMaterial);
+    rightWall.position.set(floorGeometry.parameters.width / 2, wallHeight / 2, 0);
+    scene.add(rightWall);
+    collisionObjects.push(rightWall);
+}
+
+// 경계 벽 생성
+createBoundaryWalls();
+
 
 
 
@@ -275,16 +311,102 @@ createClassroom(60, -60, 4);
 
 
 // 나무, 가로등, 벤치, 분수대 배치
-createTree(-70, 20);
-createTree(-50, 20);
-createTree(50, 20);
-createTree(70, 20);
-createLamp(-60, 30);
-createLamp(60, 30);
-createBench(-40, 10);
-createBench(40, 10);
-createFountain(0, 30);
+// createTree(-70, 20);
+// createTree(-50, 20);
+// createTree(50, 20);
+// createTree(70, 20);
+// createLamp(-60, 30);
+// createLamp(60, 30);
 
+// createBench(-40, 10);
+// createBench(40, 10);
+
+// createFountain(0, 30);
+
+// createGazebo(-30, -30);
+// createStatue(30, -30);
+// createFlowerBed(-50, -50);
+// createPond(50, -50);
+
+function isPositionOccupied(x, z, width, depth) {
+    return classrooms.some(classroom => {
+        return (
+            x < classroom.x + classroom.width / 2 + width / 2 &&
+            x > classroom.x - classroom.width / 2 - width / 2 &&
+            z < classroom.z + classroom.depth / 2 + depth / 2 &&
+            z > classroom.z - classroom.depth / 2 - depth / 2
+        );
+    });
+}
+
+// 나무를 미리 정해진 고정된 좌표에 배치
+const treePositions = [
+    { x: -85, z: 60 }, { x: -75, z: 40 }, { x: -65, z: 20 }, { x: -55, z: 0 },
+    { x: -45, z: -20 }, { x: -35, z: -40 }, { x: 35, z: -30 },
+    { x: 45, z: -10 }, { x: 55, z: 10 }, { x: 65, z: 30 }, { x: 75, z: 50 },
+    { x: 85, z: 70 }, { x: 70, z: 85 }, { x: 50, z: 75 }, { x: 30, z: 65 },
+    { x: 10, z: 55 }, { x: -10, z: 45 }, { x: -30, z: 35 }, { x: -50, z: 25 },
+    { x: -70, z: 15 }, { x: -90, z: 5 }, { x: 20, z: 45 }, { x: 40, z: 35 },
+    { x: 60, z: 25 }, { x: 80, z: 15 }, { x: 0, z: 25 }, { x: -20, z: 15 },
+    { x: -40, z: 5 }, { x: 20, z: -15 }, { x: 40, z: -25 }, { x: 60, z: -35 },
+    { x: 80, z: -45 }
+];
+
+
+treePositions.forEach(position => {
+    if (
+        position.x >= -floorWidth / 2 && position.x <= floorWidth / 2 &&
+        position.z >= -floorDepth / 2 && position.z <= floorDepth / 2 &&
+        !isPositionOccupied(position.x, position.z, 5, 5)
+    ) {
+        createTree(position.x, position.z);
+    }
+});
+
+// 광장에 구조물 배치
+const structures = [
+    { type: 'lamp', x: -60, z: 30 },
+    { type: 'lamp', x: 60, z: 30 },
+    { type: 'bench', x: -40, z: 10 },
+    { type: 'bench', x: 40, z: 10 },
+    { type: 'fountain', x: 0, z: 30 },
+    { type: 'gazebo', x: -30, z: 30 },
+    { type: 'statue', x: 30, z: 30 },
+    { type: 'flowerBed', x: -50, z: 50 },
+    { type: 'pond', x: 50, z: 50 },
+    // 더 많은 구조물 추가
+    { type: 'lamp', x: -70, z: 50 },
+    { type: 'bench', x: -70, z: 30 },
+    { type: 'flowerBed', x: 70, z: 70 }
+];
+
+structures.forEach(structure => {
+    if (!isPositionOccupied(structure.x, structure.z, 5, 5)) {
+        switch (structure.type) {
+            case 'lamp':
+                createLamp(structure.x, structure.z);
+                break;
+            case 'bench':
+                createBench(structure.x, structure.z);
+                break;
+            case 'fountain':
+                createFountain(structure.x, structure.z);
+                break;
+            case 'gazebo':
+                createGazebo(structure.x, structure.z);
+                break;
+            case 'statue':
+                createStatue(structure.x, structure.z);
+                break;
+            case 'flowerBed':
+                createFlowerBed(structure.x, structure.z);
+                break;
+            case 'pond':
+                createPond(structure.x, structure.z);
+                break;
+        }
+    }
+});
 
 // // 현재 시간을 나타내는 텍스트 생성 및 업데이트
 // const fontLoader = new THREE.FontLoader();
@@ -410,17 +532,18 @@ function followAliveCharacter() {
 
 function updateChatBubbles() {
     Object.keys(chatBubbles).forEach(playerId => {
-        if (!players[playerId] || !players[playerId].character) return;
-        const player = players[playerId].character;
-        const chatBubble = chatBubbles[playerId].element;
-        const vector = new THREE.Vector3();
-        player.getWorldPosition(vector);
-        vector.project(camera);
+        const chatBubble = chatBubbles[playerId];
+        if (players[playerId] && chatBubble.element.style.display === 'block') {
+            const player = players[playerId]
+            const playerPosition = new THREE.Vector3(player.position.x, player.position.y + 2, player.position.z);
+            const screenPosition = playerPosition.project(camera);
 
-        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
-        chatBubble.style.left = `${x}px`;
-        chatBubble.style.top = `${y - 50}px`; // 말풍선 위치 조정
+            const screenX = (window.innerWidth / 2) * (screenPosition.x + 1);
+            const screenY = (window.innerHeight / 2) * (-screenPosition.y + 1);
+
+            chatBubble.element.style.left = `${screenX}px`;
+            chatBubble.element.style.top = `${screenY}px`;
+        }
     });
 }
 

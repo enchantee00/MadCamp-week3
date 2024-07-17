@@ -54,6 +54,7 @@ let players = { // dummy 플레이어 추가
 // }
 };
 let whiteboards = {};
+
 let items = { // dummy 아이템 추가
     // itemId1: { type: 'gun', position: { x: 6, y: 0.5, z: -6 } },
     // itemId2: { type: 'gun', position: { x: 8, y: 0.5, z: -6 } },
