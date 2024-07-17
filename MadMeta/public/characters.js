@@ -41,7 +41,7 @@ function updateHPBar(character) {
 }
 
 // 캐릭터 추가 함수
-function createCharacter(id,isLocal = false) {
+function createCharacter(id, name, isLocal = false) {
     const character = new THREE.Group();
 
     // 몸통 추가
@@ -121,7 +121,7 @@ function createCharacter(id,isLocal = false) {
     createHPBar(character);
 
     // 텍스트 스프라이트 추가
-    const textSprite = createTextSprite(id);
+    const textSprite = createTextSprite(name);
     textSprite.position.set(0, 2.0, 0); // HP 바 위에 텍스트 위치
     character.add(textSprite);
 

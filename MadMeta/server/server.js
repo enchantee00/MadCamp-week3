@@ -15,7 +15,7 @@ let gameOn = false;
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-app.listen(port, '143.248.226.10', () => {
+app.listen(port, '0.0.0.0', () => {
 
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
@@ -26,7 +26,8 @@ const wss = new WebSocket.Server({ port: 8080, host: '0.0.0.0' });
 let clients = {};
 let players = { // dummy 플레이어 추가
     dummy: {
-        id: 'dummy',
+        id: '1',
+        name: 'dummy1',
         hp: 100,
         position: { x: 4, y: 0.6, z: -8 },
         rotation: { y: 0 },
@@ -34,7 +35,8 @@ let players = { // dummy 플레이어 추가
         state: "alive"
     },
     dummy1: {
-      id: 'dummy1',
+      id: '2',
+      name: 'dummy2',
       hp: 100,
       position: { x: 5, y: 0.6, z: -8 },
       rotation: { y: 0 },
@@ -42,7 +44,8 @@ let players = { // dummy 플레이어 추가
       state: "alive"
   },
   dummy2: {
-    id: 'dummy2',
+    id: '3',
+    name: 'dummy3',
     hp: 100,
     position: { x: 6, y: 0.6, z: -8 },
     rotation: { y: 0 },
@@ -73,29 +76,35 @@ function broadcast(message, excludeId) {
 
 wss.on('connection', (ws) => {
   const id = Date.now(); // TODO: login 로직
+  
   ws.id = id;
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보와 아이템 정보 전달
   ws.send(JSON.stringify({ type: 'init', states: players, whiteboard: whiteboards}));
 
-  // 새로운 플레이어 정보를 players 객체에 추가ㅁㅈ
-  players[id] = {
-    id: id,
-    hp: 100,
-    position: { x: 0, y: 0, z: 0 },
-    rotation: { y: 0 },
-    weapon: null // 초기 무기 정보
-  };
-
-  // 새로운 클라이언트에게 확인 메시지 전송
-  ws.send(JSON.stringify({ type: 'connected', id }));
-
-  // 기존 클라이언트에게 새로운 클라이언트 정보 전달 (현재 클라이언트를 제외)
-  broadcast(JSON.stringify({ type: 'newPlayer', id }), id);
 
   ws.on('message', (message) => {
     const data = JSON.parse(message);
+
+    if(data.type === 'characterName') {
+      // 새로운 클라이언트에게 확인 메시지 전송
+      const name = data.text;
+      ws.send(JSON.stringify({ type: 'connected', id, name }));
+
+      // 새로운 플레이어 정보를 players 객체에 추가
+      players[id] = {
+        id: id,
+        name: name,
+        hp: 100,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { y: 0 },
+        weapon: null // 초기 무기 정보
+      };
+
+      // 기존 클라이언트에게 새로운 클라이언트 정보 전달 (현재 클라이언트를 제외)
+      broadcast(JSON.stringify({ type: 'newPlayer', id, name }), id);
+    }
 
     // 클라이언트 상태 업데이트
     if (data.position && data.rotation) {

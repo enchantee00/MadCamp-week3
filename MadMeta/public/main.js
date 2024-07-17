@@ -46,8 +46,9 @@ scene.add(floor);
 
 
 
-let inputBox, inputText, submitText, questionBox, confirmButton;
+let inputBox, inputText, submitText, questionBox, confirmButton, nameInputContainer, nameInput, submitName;
 let gameControlsEnabled = true;
+let playerName = '';
 
 
 function init() {
@@ -56,6 +57,9 @@ function init() {
     submitText = document.getElementById('submitText');
     questionBox = document.getElementById('questionBox');
     confirmButton = document.getElementById('confirmButton');
+    nameInputContainer = document.getElementById('nameInputContainer');
+    nameInput = document.getElementById('nameInput');
+    submitName = document.getElementById('submitName');
 
 
     submitText.addEventListener('click', () => {
@@ -98,6 +102,19 @@ function init() {
         }
         // enableGameControls();
     });
+
+    submitName.addEventListener('click', () => {
+        playerName = nameInput.value.trim();
+        if (playerName) {
+            nameInputContainer.style.display = 'none';
+            sendCharacterName(playerName); // 플레이어 생성
+        }
+    });
+
+    // 페이지 로드 시 이름 입력 창 표시
+    window.onload = () => {
+        nameInputContainer.style.display = 'flex';
+    };
 }
 
 function enableGameControls() {

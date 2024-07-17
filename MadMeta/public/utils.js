@@ -106,7 +106,7 @@ function detectCollision(object, targetArray) {
 function createTextSprite(message) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    context.font = 'Bold 20px Arial';
+    context.font = 'Bold 30px Arial';
     context.fillStyle = 'rgba(255, 255, 255, 1.0)';
     context.fillText(message, 0, 20);
 
