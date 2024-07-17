@@ -238,7 +238,7 @@ function shoot() {
 
 
 function moveCharacter() {
-    if (!localCharacter) return;
+    if (!localCharacter || isInputBlocked) return;
 
     const speed = 0.3; // 이동 속도 조정
     const rotationSpeed = 0.1; // 회전 속도 조정

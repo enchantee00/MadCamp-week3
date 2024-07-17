@@ -15,7 +15,7 @@ let gameOn = false;
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-app.listen(port, '143.248.226.10', () => {
+app.listen(port, '143.248.226.140', () => {
 
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
@@ -196,7 +196,7 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(60);
+          broadcastRemainingTime(20);
 
       });
     }

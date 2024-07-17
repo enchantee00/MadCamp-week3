@@ -3,6 +3,7 @@ const keyState = {};
 let items = {}; // 로컬 아이템 관리
 
 let myLocalCharacter = null;
+let deadPosition ;
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
@@ -17,7 +18,7 @@ let isInputBlocked = false; // 입력을 막는 플래그
 
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.10:8080');
+const ws = new WebSocket('ws://143.248.226.140:8080');
 
 function init(){
     document.addEventListener('DOMContentLoaded', () => {
@@ -179,17 +180,18 @@ ws.onmessage = (message) => {
     }else if(data.type === "death"){
         const player = players[data.playerId];
         if(player){
-            player.hp = 0;
-            updateHPBar(player);
-            player.rotation.x = Math.PI /2 ;
             if(player == localCharacter){
                 console.log("내가 죽었어용!");
                 //방향키에 따라 시점 변경 구현하기
                 myLocalCharacter = localCharacter;
+                deadPosition = localCharacter.position.clone();
+                console.log("deadPosition: ",deadPosition);
                 blockInput(true);
-                localCharacter = characters[0];
-
             }
+            updatePlayerWeapon(player, null);
+            player.hp = 0;
+            updateHPBar(player);
+            player.rotation.x = Math.PI /2 ;
         }
     }  else if (data.type === 'itemRemoved') {
         console.log("gameState: itemRemoved");
@@ -255,6 +257,12 @@ ws.onmessage = (message) => {
         }
         if(myLocalCharacter){
             localCharacter = myLocalCharacter;
+            myLocalCharacter = null;
+            showCharacter(localCharacter);
+            console.log("revival deadPosition:", deadPosition);
+            localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
+            deadPosition = null;
+            localCharacter.position.y = 0.6;
         }
         blockInput(false);
         
@@ -282,7 +290,6 @@ function handleKeydown(event) {
     keyState[event.code] = true;
 
     if (isInputBlocked) {
-        event.preventDefault();
         if (key === 'arrowleft') {
             // 왼쪽 방향키를 누르면 이전 캐릭터로 변경
             changeCharacter(-1);
@@ -290,6 +297,7 @@ function handleKeydown(event) {
             // 오른쪽 방향키를 누르면 다음 캐릭터로 변경
             changeCharacter(1);
         } else {
+            event.preventDefault();
             console.log(`${key.toUpperCase()} key pressed but no action defined.`);
         }
     }
@@ -302,7 +310,8 @@ function handleKeyup(event) {
 
 // localCharacter를 변경하는 함수
 function changeCharacter(direction) {
-    characters = Object.values(players);
+    hideCharacter(myLocalCharacter);
+    characters = Object.values(players).filter(character => character != myLocalCharacter);
     characterIndex = (characterIndex + direction + characters.length) % characters.length;
     localCharacter = characters[characterIndex];
     console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
@@ -316,6 +325,51 @@ document.addEventListener('keyup', handleKeyup);
 // 입력을 막는 함수
 function blockInput(block) {
     isInputBlocked = block;
+}
+
+function hideCharacter(character) {
+    if (!character.originalMaterials) {
+        character.originalMaterials = {};
+    }
+
+    character.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+            // 원래 재질을 저장
+            character.originalMaterials[child.uuid] = child.material;
+
+            // 투명하게 만들어서 안 보이게 함
+            child.material = new THREE.MeshBasicMaterial({ 
+                color: child.material.color, 
+                transparent: true, 
+                opacity: 0 
+            });
+        } else if (child.isSprite) {
+            // TextSprite를 숨김
+            child.visible = false;
+        }
+    });
+}
+function showCharacter(character) {
+    if (!character.originalMaterials) {
+        console.warn("No original materials found for this character.");
+        return;
+    }
+    console.log("showCharacter");
+    character.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+            // 원래 재질로 복구
+            if (character.originalMaterials[child.uuid]) {
+                child.material = character.originalMaterials[child.uuid];
+                child.material.opacity = 1;
+            }
+        } else if (child.isSprite) {
+            // TextSprite를 보이게 함
+            child.visible = true;
+        }
+    });
+
+    // 원래 재질 정보를 제거하여 메모리 누수를 방지
+    delete character.originalMaterials;
 }
 
 
