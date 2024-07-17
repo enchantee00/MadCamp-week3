@@ -384,17 +384,18 @@ function followCharacter() {
 
 function updateChatBubbles() {
     Object.keys(chatBubbles).forEach(playerId => {
-        if (!players[playerId] || !players[playerId].character) return;
-        const player = players[playerId].character;
-        const chatBubble = chatBubbles[playerId].element;
-        const vector = new THREE.Vector3();
-        player.getWorldPosition(vector);
-        vector.project(camera);
+        const chatBubble = chatBubbles[playerId];
+        if (players[playerId] && chatBubble.element.style.display === 'block') {
+            const player = players[playerId]
+            const playerPosition = new THREE.Vector3(player.position.x, player.position.y + 2, player.position.z);
+            const screenPosition = playerPosition.project(camera);
 
-        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
-        chatBubble.style.left = `${x}px`;
-        chatBubble.style.top = `${y - 50}px`; // 말풍선 위치 조정
+            const screenX = (window.innerWidth / 2) * (screenPosition.x + 1);
+            const screenY = (window.innerHeight / 2) * (-screenPosition.y + 1);
+
+            chatBubble.element.style.left = `${screenX}px`;
+            chatBubble.element.style.top = `${screenY}px`;
+        }
     });
 }
 

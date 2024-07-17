@@ -256,7 +256,6 @@ function updateTimeText() {
 }
 
 function addChatMessage(name, message) {
-    console.log(message);
     const messageElement = document.createElement('div');
     messageElement.className = 'chat-message';
     messageElement.textContent = `${name}: ${message}`;
@@ -266,10 +265,11 @@ function addChatMessage(name, message) {
 
 
 function createChatBubble(playerId, message) {
-    if (!players[playerId] || !players[playerId].character) return;
+    if (!players[playerId]) return;
 
-    const player = players[playerId].character;
+    const player = players[playerId]
     let chatBubble = chatBubbles[playerId];
+    console.log("chat player", player);
 
     if (!chatBubble) {
         const div = document.createElement('div');
@@ -285,8 +285,20 @@ function createChatBubble(playerId, message) {
         chatBubbles[playerId] = chatBubble;
     }
 
+    console.log(chatBubble);
+
     chatBubble.element.textContent = message;
     chatBubble.element.style.display = 'block';
+
+    // const playerPosition = players[playerId].position.clone();
+    // const screenPosition = playerPosition.project(camera);
+
+    // const screenX = (window.innerWidth / 2) * (screenPosition.x + 1);
+    // const screenY = (window.innerHeight / 2) * (-screenPosition.y + 1);
+
+    // chatBubble.element.style.left = `${screenX}px`;
+    // chatBubble.element.style.top = `${screenY - 50}px`; // 말풍선이 캐릭터 머리 위에 위치하도록 조정
+
 
     if (chatBubble.timeout) clearTimeout(chatBubble.timeout);
     chatBubble.timeout = setTimeout(() => {
