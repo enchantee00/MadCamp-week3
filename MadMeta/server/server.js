@@ -16,7 +16,7 @@ let intervalId = null;
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-app.listen(port, '143.248.226.210', () => {
+app.listen(port, '143.248.226.140', () => {
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
 
@@ -185,7 +185,8 @@ wss.on('connection', (ws) => {
           console.log("player death", players[data.targetId]);
           broadcast(JSON.stringify({
             type:"death",
-            playerId : data.targetId
+            playerId : data.targetId,
+            playerName: players[data.targetId].name
           }))
           //gameOver조건 - player 한 명
           const {alivePlayer, aliveCount} = countAlivePlayers(players);
@@ -199,9 +200,10 @@ wss.on('connection', (ws) => {
               winner: alivePlayer
 
             }))
+            resetPlayers();
+            gameOn = false;
           }
-          resetPlayers();
-          gameOn = false;
+
         }
         // 모든 클라이언트에게 브로드캐스트
         broadcast(JSON.stringify({

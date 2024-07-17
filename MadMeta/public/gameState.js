@@ -191,7 +191,7 @@ ws.onmessage = (message) => {
                 // console.log("deadPosition: ",deadPosition);
                 blockInput(true);
             }
-            showMessage(`Player ${data.playerId} is dead.`);
+            showMessage(`Player ${data.playerName} is dead.`);
 
             // console.log(data.playerId);
             updatePlayerWeapon(player, null);
@@ -629,7 +629,7 @@ async function performShoot(shooter) {
 
             const direction = new THREE.Vector3();
             shooter.getWorldDirection(direction);
-            bullet.userData.velocity = direction.multiplyScalar(0.1);
+            bullet.userData.velocity = direction.multiplyScalar(1);
             bullet.userData.startPosition = bullet.position.clone();
         };
 
