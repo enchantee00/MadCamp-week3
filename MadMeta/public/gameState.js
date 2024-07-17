@@ -289,7 +289,7 @@ ws.onmessage = (message) => {
         }
     } else if(data.type === 'chat') {
         createChatBubble(data.id, data.message);
-        addChatMessage(data.id, data.message);
+        addChatMessage(data.name, data.message);
     }
 
 };
@@ -367,7 +367,7 @@ function changeCharacter(direction) {
     localCharacter = characters[characterIndex];
     // console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
 
-
+}
 
 // 키보드 이벤트 리스너 추가
 document.addEventListener('keydown', handleKeydown);
@@ -772,10 +772,11 @@ function sendCharacterName(name) {
     }));
 }
 
-function sendMessage(playerId, message) {
+function sendMessage(playerId, playerName, message) {
     ws.send(JSON.stringify({
         type: 'chat',
         id: playerId,
-        text: message
+        name: playerName,
+        message: message
     }));
 }
