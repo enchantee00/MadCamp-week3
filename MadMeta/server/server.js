@@ -196,7 +196,7 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(20);
+          broadcastRemainingTime(60);
 
       });
     }

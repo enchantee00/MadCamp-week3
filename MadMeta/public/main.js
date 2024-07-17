@@ -275,7 +275,7 @@ window.addEventListener('keydown', (event) => {
     }
 
     if (event.code === 'Space') {
-        if (hasGun) {
+        if (localCharacter.weapon === "gun") {
             shoot();
         } else {
             attack();

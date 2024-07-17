@@ -4,8 +4,8 @@ let weapon = null;
 let gun = null;
 let currentWeapon = null;
 
-let hasSword = false;
-let hasGun = false;
+// let hasSword = false;
+// let hasGun = false;
 let isAttacking = false;
 let isShooting = false;
 let isJumping = false;
@@ -190,11 +190,7 @@ function detectItemPickup() {
 
 // 무기 공격 함수
 function attack() {
-    if (!hasSword ) {
-        console.log("hasSword:",hasSword,'무기가 없거나 공격 중입니다!');
-        console.log(isAttacking);
-        return;
-    }
+
 
     // isAttacking = true; // 공격 애니메이션 시작
     sendAttack(localCharacter);
@@ -227,11 +223,6 @@ function detectCharacterCollision() {
 
 // 총 발사 함수
 function shoot() {
-    if (!hasGun || isShooting) {
-        console.log(hasGun,"isShooting", isShooting);
-        console.log('총이 없거나 발사 중입니다!');
-        return;
-    }
     sendShoot(localCharacter);
 }
 

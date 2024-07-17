@@ -91,7 +91,7 @@ ws.onmessage = (message) => {
                     // 여기서 character 객체 추가
 
                 }
-                console.log(players[clientId]);
+                // console.log(players[clientId]);
 
             });
         }
@@ -152,7 +152,7 @@ ws.onmessage = (message) => {
         let player = players[data.targetId];
         if (player) { 
             player.hp -= data.damage;
-            console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
+            // console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
             updateHPBar(player);
             if (player.hp <= 0) {
                 player.hp = 0;
@@ -181,13 +181,16 @@ ws.onmessage = (message) => {
         const player = players[data.playerId];
         if(player){
             if(player == localCharacter){
-                console.log("내가 죽었어용!");
+                // console.log("내가 죽었어용!");
                 //방향키에 따라 시점 변경 구현하기
                 myLocalCharacter = localCharacter;
                 deadPosition = localCharacter.position.clone();
-                console.log("deadPosition: ",deadPosition);
+                // console.log("deadPosition: ",deadPosition);
                 blockInput(true);
             }
+            showMessage(`Player ${data.playerId} is dead.`);
+
+            // console.log(data.playerId);
             updatePlayerWeapon(player, null);
             player.hp = 0;
             updateHPBar(player);
@@ -238,7 +241,7 @@ ws.onmessage = (message) => {
 
     //game이 끝나면 모든 아이템 지우기
     } else if(data.type === "gameOver"){
-        console.log("gameover");
+        // console.log("gameover");
         showRemainingTime(false);
         deleteAllItems();
         const playersInServer = data.players;
@@ -259,7 +262,7 @@ ws.onmessage = (message) => {
             localCharacter = myLocalCharacter;
             myLocalCharacter = null;
             showCharacter(localCharacter);
-            console.log("revival deadPosition:", deadPosition);
+            // console.log("revival deadPosition:", deadPosition);
             localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
             deadPosition = null;
             localCharacter.position.y = 0.6;
@@ -282,6 +285,16 @@ ws.onclose = () => {
     });
 };
 
+function showMessage(message) {
+    const messageBox = document.getElementById("message-box");
+    messageBox.textContent = message;
+    messageBox.style.display = "block";
+    
+    // 3초 후에 메시지 박스를 숨깁니다.
+    setTimeout(() => {
+        messageBox.style.display = "none";
+    }, 3000);
+}
 
 
 // 키보드 입력을 처리하는 함수
@@ -298,7 +311,7 @@ function handleKeydown(event) {
             changeCharacter(1);
         } else {
             event.preventDefault();
-            console.log(`${key.toUpperCase()} key pressed but no action defined.`);
+            // console.log(`${key.toUpperCase()} key pressed but no action defined.`);
         }
     }
 }
@@ -314,7 +327,7 @@ function changeCharacter(direction) {
     characters = Object.values(players).filter(character => character != myLocalCharacter);
     characterIndex = (characterIndex + direction + characters.length) % characters.length;
     localCharacter = characters[characterIndex];
-    console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
+    // console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
 }
 
 
@@ -428,7 +441,7 @@ function animateAttack() {
 
 function performAttack(attacker) {
     console.log("performattack");
-    if (!attacker || attackInProgress || !hasSword) {
+    if (!attacker || attackInProgress) {
         console.log("이미 공격중이거나 공격자가 없습니다.");
         return;
     }
@@ -530,8 +543,8 @@ let shootingInProgress = false;
 
 // 이 함수는 캐릭터가 총을 발사하는 로직을 실행합니다.
 async function performShoot(shooter) {
-    console.log("performShoot");
-    if (!shooter || shootingInProgress || !hasGun) {
+    console.log("performShoot: ", shooter);
+    if (!shooter || shootingInProgress) {
         console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
         return;
     }
@@ -689,16 +702,10 @@ function updatePlayerWeapon(player, weapon) {
         if (weapon === 'sword') {
             weaponGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            hasGun = false;
-            hasSword = true;
         } else if (weapon === 'gun') {
             weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-            hasGun = true;
-            hasSword = false;
-        } else{
-            hasGun = false;
-            hasSword = false;
+
         }
         const newWeapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
         rightArm.add(newWeapon);
