@@ -123,7 +123,36 @@ wss.on('connection', (ws) => {
         rotation: data.rotation
       }));
     }
+        // 게임 스타트 이벤트 처리
+    // 일단 3 2 1  start 카운트 처리하기
+    // 아이템 뿌리고 시작
+    if (data.type === "gameStart") {
+      console.log("gameStart");
+      if(gameOn) return;
+      gameOn = true;
+      
+      if(Object.keys(players).length === 1){
+        broadcast(JSON.stringify({
+          type: "cantStartGame"
 
+        }))
+        gameOn = false;
+        return;
+      }
+      
+      sendGameStartSequence().then(() => {
+          items = generateRandomItems(20);
+          console.log(items.length);
+          broadcast(JSON.stringify({
+              type: "itemDistribution",
+              items: items
+          }));
+
+          broadcastEverySecond();
+
+      });
+    }
+    if(gameOn){
     // 공격 이벤트 처리
     if (data.type === 'attack') {
       // console.log("server: attack");
@@ -206,36 +235,8 @@ wss.on('connection', (ws) => {
         }));
       }
     }
-    // 게임 스타트 이벤트 처리
-    // 일단 3 2 1  start 카운트 처리하기
-    // 아이템 뿌리고 시작
-    if (data.type === "gameStart") {
-      console.log("gameStart");
-      if(gameOn) return;
-      gameOn = true;
-      
-      if(Object.keys(players).length === 1){
-        broadcast(JSON.stringify({
-          type: "cantStartGame"
 
-        }))
-        gameOn = false;
-        return;
-      }
-      
-      sendGameStartSequence().then(() => {
-          items = generateRandomItems(20);
-          console.log(items.length);
-          broadcast(JSON.stringify({
-              type: "itemDistribution",
-              items: items
-          }));
-
-          broadcastEverySecond();
-
-      });
-    }
-
+  }
     if (data.type === 'whiteboardUpdate') {
       whiteboards[data.whiteboard.whiteboardId] = data.text;
       broadcast(JSON.stringify({

@@ -270,7 +270,8 @@ ws.onmessage = (message) => {
               updatePlayerWeapon(players[clientId], null);
             }
         }
-
+        localCharacter.weapon = null;
+        updatePlayerWeapon(localCharacter, null);
         // console.log("revival deadPosition:", deadPosition);
         // localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
         // deadPosition = null;
