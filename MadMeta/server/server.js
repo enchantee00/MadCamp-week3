@@ -11,7 +11,7 @@ const port = 3000;
 let gameOn = false;
 let intervalId = null;
 // 
-
+let numItems = 50;
 
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -142,7 +142,7 @@ wss.on('connection', (ws) => {
       }
       
       sendGameStartSequence().then(() => {
-          items = generateRandomItems(20);
+          items = generateRandomItems(numItems);
           console.log(items.length);
           broadcast(JSON.stringify({
               type: "itemDistribution",
