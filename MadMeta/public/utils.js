@@ -255,3 +255,42 @@ function updateTimeText() {
     }
 }
 
+function addChatMessage(id, message) {
+    const messageElement = document.createElement('div');
+    messageElement.className = 'chat-message';
+    messageElement.textContent = `${id}: ${message}`;
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+
+function createChatBubble(playerId, message) {
+    if (!players[playerId] || !players[playerId].character) return;
+
+    const player = players[playerId].character;
+    let chatBubble = chatBubbles[playerId];
+
+    if (!chatBubble) {
+        const div = document.createElement('div');
+        div.className = 'chat-bubble';
+        div.style.position = 'absolute';
+        div.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        div.style.borderRadius = '5px';
+        div.style.padding = '5px 10px';
+        div.style.maxWidth = '200px';
+        div.style.whiteSpace = 'pre-wrap';
+        document.body.appendChild(div);
+        chatBubble = { element: div, timeout: null };
+        chatBubbles[playerId] = chatBubble;
+    }
+
+    chatBubble.element.textContent = message;
+    chatBubble.element.style.display = 'block';
+
+    if (chatBubble.timeout) clearTimeout(chatBubble.timeout);
+    chatBubble.timeout = setTimeout(() => {
+        chatBubble.element.style.display = 'none';
+    }, 3000);
+}
+
+

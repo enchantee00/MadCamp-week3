@@ -218,6 +218,14 @@ wss.on('connection', (ws) => {
         text: data.text
       }));
     }
+    // 채팅 메시지 브로드캐스트
+    if (data.type === 'chat') {
+      broadcast(JSON.stringify({
+          type: 'chat',
+          id: data.id,
+          message: data.message
+      }));
+    }
 
   });
 

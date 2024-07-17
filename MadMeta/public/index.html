@@ -105,7 +105,37 @@
             padding: 10px 20px;
             font-size: 20px;
         }
-
+        #chatInputContainer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+        }
+        #chatInputContainer input {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 20px;
+        }
+        #chatInputContainer button {
+            padding: 10px 20px;
+            font-size: 20px;
+        }
+        #chatMessages {
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -137,7 +167,11 @@
     <div id="gameCount">
         <p id="gameCountText">게임 시작!</p>
     </div>
-
+    <div id="chatInputContainer">
+        <input type="text" id="chatInput" placeholder="Type your message">
+        <button id="sendChat">Send</button>
+    </div>
+    <div id="chatMessages"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="utils.js"></script>

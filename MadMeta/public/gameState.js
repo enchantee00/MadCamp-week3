@@ -111,6 +111,7 @@ ws.onmessage = (message) => {
     } else if (data.type === 'connected') {
         // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
         ws.id = data.id;
+        playerId = data.id;
         createCharacter(ws.id, data.name, true); // 로컬 캐릭터 생성
         players[ws.id] = localCharacter;
         // console.log("gameState: data->connected");
@@ -263,7 +264,11 @@ ws.onmessage = (message) => {
         if (classrooms[whiteboardId]) {
             updateWhiteboardTexture(classrooms[whiteboardId-1].whiteboard, text);
         }
+    } else if(data.type === 'chat') {
+        createChatBubble(data.id, data.message);
+        addChatMessage(data.id, data.message);
     }
+
 };
 
 
@@ -670,5 +675,13 @@ function sendCharacterName(name) {
     ws.send(JSON.stringify({
         type: 'characterName',
         text: name
+    }));
+}
+
+function sendMessage(playerId, message) {
+    ws.send(JSON.stringify({
+        type: 'chat',
+        id: playerId,
+        text: message
     }));
 }

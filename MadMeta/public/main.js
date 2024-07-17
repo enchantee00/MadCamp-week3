@@ -46,10 +46,11 @@ scene.add(floor);
 
 
 
-let inputBox, inputText, submitText, questionBox, confirmButton, nameInputContainer, nameInput, submitName;
+let inputBox, inputText, submitText, questionBox, confirmButton, nameInputContainer, nameInput, submitName, chatInputContainer, chatInput, sendChat, chatMessages;
 let gameControlsEnabled = true;
 let playerName = '';
-
+let playerId = '';
+let chatBubbles = {};
 
 function init() {
     inputBox = document.getElementById('inputBox');
@@ -60,6 +61,10 @@ function init() {
     nameInputContainer = document.getElementById('nameInputContainer');
     nameInput = document.getElementById('nameInput');
     submitName = document.getElementById('submitName');
+    chatInputContainer = document.getElementById('chatInputContainer');
+    chatInput = document.getElementById('chatInput');
+    sendChat = document.getElementById('sendChat');
+    chatMessages = document.getElementById('chatMessages');
 
 
     submitText.addEventListener('click', () => {
@@ -101,6 +106,7 @@ function init() {
             }
         }
         // enableGameControls();
+
     });
 
     submitName.addEventListener('click', () => {
@@ -115,6 +121,24 @@ function init() {
     window.onload = () => {
         nameInputContainer.style.display = 'flex';
     };
+
+    sendChat.addEventListener('click', () => {
+        const message = chatInput.value;
+        if (message && ws) {
+
+            sendMessage(playerId, message);
+            // ws.send(JSON.stringify({ type: 'chat', name: playerName, message }));
+            // addChatMessage(playerName, message); // 로컬로도 바로 추가
+            chatInput.value = '';
+        }
+    });
+
+    chatInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendChat.click();
+        }
+    });
+
 }
 
 function enableGameControls() {
@@ -350,6 +374,23 @@ function followCharacter() {
     // controls.target.copy(localCharacter.position);
 }
 
+function updateChatBubbles() {
+    Object.keys(chatBubbles).forEach(playerId => {
+        if (!players[playerId] || !players[playerId].character) return;
+        const player = players[playerId].character;
+        const chatBubble = chatBubbles[playerId].element;
+        const vector = new THREE.Vector3();
+        player.getWorldPosition(vector);
+        vector.project(camera);
+
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+        chatBubble.style.left = `${x}px`;
+        chatBubble.style.top = `${y - 50}px`; // 말풍선 위치 조정
+    });
+}
+
+
 function animate() {
     requestAnimationFrame(animate);
     moveCharacter(); // 로컬 캐릭터 이동
@@ -357,6 +398,7 @@ function animate() {
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
     // controls.update(); // OrbitControls 업데이트
+    updateChatBubbles();
 
 
 
