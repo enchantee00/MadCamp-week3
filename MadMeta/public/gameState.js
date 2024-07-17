@@ -18,7 +18,8 @@ let isInputBlocked = false; // 입력을 막는 플래그
 
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.140:8080');
+const ws = new WebSocket('ws://143.248.226.210:8080');
+
 
 function init(){
     document.addEventListener('DOMContentLoaded', () => {
@@ -78,7 +79,7 @@ ws.onmessage = (message) => {
                 const state = data.states[clientId];
                 console.log("gameState init: clientId",clientId,"state: ",state);
                 if (clientId !== ws.id) {
-                    const character = createCharacter(clientId);
+                    const character = createCharacter(clientId, state.name);
                     character.position.set(state.position.x, state.position.y, state.position.z);
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
@@ -119,13 +120,14 @@ ws.onmessage = (message) => {
     } else if (data.type === 'connected') {
         // 서버에서 연결 확인 메시지를 받으면 로컬 캐릭터 생성
         ws.id = data.id;
-        createCharacter(ws.id,true); // 로컬 캐릭터 생성
+        playerId = data.id;
+        createCharacter(ws.id, data.name, true); // 로컬 캐릭터 생성
         players[ws.id] = localCharacter;
         // console.log("gameState: data->connected");
     } else if (data.type === 'newPlayer') {
         // 새로운 플레이어 추가 (현재 클라이언트 자신은 제외)
         if (data.id !== ws.id) {
-            createCharacter(data.id);
+            createCharacter(data.id, data.name);
         }
     } else if (data.type === 'removePlayer') {
         // 플레이어 제거
@@ -285,7 +287,11 @@ ws.onmessage = (message) => {
         if (classrooms[whiteboardId]) {
             updateWhiteboardTexture(classrooms[whiteboardId-1].whiteboard, text);
         }
+    } else if(data.type === 'chat') {
+        createChatBubble(data.id, data.message);
+        addChatMessage(data.id, data.message);
     }
+
 };
 
 
@@ -756,5 +762,20 @@ function sendWhiteboard(whiteboard, text) {
         type: 'whiteboardUpdate',
         whiteboard: whiteboard,
         text: text
+    }));
+}
+
+function sendCharacterName(name) {
+    ws.send(JSON.stringify({
+        type: 'characterName',
+        text: name
+    }));
+}
+
+function sendMessage(playerId, message) {
+    ws.send(JSON.stringify({
+        type: 'chat',
+        id: playerId,
+        text: message
     }));
 }
