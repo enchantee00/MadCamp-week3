@@ -239,6 +239,7 @@ function shoot() {
 
 function moveCharacter() {
     if (!localCharacter) return;
+    if (!gameControlsEnabled) return; // 게임 컨트롤이 비활성화된 경우 이벤트 무시
 
     const speed = 0.3; // 이동 속도 조정
     const rotationSpeed = 0.1; // 회전 속도 조정
