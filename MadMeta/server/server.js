@@ -16,7 +16,7 @@ let intervalId = null;
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-app.listen(port, '143.248.226.140', () => {
+app.listen(port, '143.248.226.210', () => {
   console.log(`Web server is running on http://0.0.0.0:${port}`);
 });
 
@@ -250,6 +250,7 @@ wss.on('connection', (ws) => {
       broadcast(JSON.stringify({
           type: 'chat',
           id: data.id,
+          name: data.name,
           message: data.message
       }));
     }

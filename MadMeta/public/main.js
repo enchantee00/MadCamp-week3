@@ -122,11 +122,19 @@ function init() {
         nameInputContainer.style.display = 'flex';
     };
 
+    chatInput.addEventListener('focus', () => {
+        disableGameControls();
+    });
+    
+    chatInput.addEventListener('blur', () => {
+        enableGameControls();
+    });
+
     sendChat.addEventListener('click', () => {
         const message = chatInput.value;
         if (message && ws) {
 
-            sendMessage(playerId, message);
+            sendMessage(playerId, playerName, message);
             // ws.send(JSON.stringify({ type: 'chat', name: playerName, message }));
             // addChatMessage(playerName, message); // 로컬로도 바로 추가
             chatInput.value = '';

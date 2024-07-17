@@ -255,10 +255,11 @@ function updateTimeText() {
     }
 }
 
-function addChatMessage(id, message) {
+function addChatMessage(name, message) {
+    console.log(message);
     const messageElement = document.createElement('div');
     messageElement.className = 'chat-message';
-    messageElement.textContent = `${id}: ${message}`;
+    messageElement.textContent = `${name}: ${message}`;
     chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
