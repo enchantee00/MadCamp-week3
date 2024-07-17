@@ -55,7 +55,7 @@
             justify-content: center;
             align-items: center;
             color: white;
-            font-size: 2em;
+            font-size: 5rem;
             z-index: 1000;
             visibility: hidden;
             opacity: 0;
@@ -74,22 +74,49 @@
         .button-box {
             padding: 10px 20px;
             background-color: #007bff;
+            width: fit-content;
+            height: fit-content;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             margin-right: 10px; /* 버튼 사이에 간격 추가 */
+            align-items: center;
+            
+            
+        }
+        .start-button{
+            background-color: #007bff;
+            border-width: 0;
+            color: white;
         }
         #countingBox {
             display: none; /* 기본적으로 숨김 */
+        }
+        .message-box {
+            display: none;
+            position: fixed;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 16px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-size: 16px;
+            text-align: center;
+            min-width: 250px;
         }
 
     </style>
 </head>
 <body>
+    <div id="message-box" class="message-box"></div>
     <div id="controls">
         <div id="startBox" class="button-box">
-            <button id="startButton">START GAME</button>
+            <button id="startButton" class = "start-button">START GAME</button>
         </div>
         <div id="countingBox" class="button-box">
             <p id="countingText">Remaining Time: <span id="remainingTime"></span></p>

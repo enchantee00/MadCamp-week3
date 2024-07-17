@@ -275,7 +275,7 @@ window.addEventListener('keydown', (event) => {
     }
 
     if (event.code === 'Space') {
-        if (hasGun) {
+        if (localCharacter.weapon === "gun") {
             shoot();
         } else {
             attack();
@@ -378,12 +378,12 @@ function animate() {
         }
     });
 
-    if (localCharacter) {
-        const localBar = localCharacter.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
-        if (localBar) {
-            localBar.lookAt(camera.position);
-        }
-    }
+    // if (localCharacter) {
+    //     const localBar = localCharacter.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
+    //     if (localBar) {
+    //         localBar.lookAt(camera.position);
+    //     }
+    // }
 
     renderer.render(scene, camera);
     sendUpdate();
