@@ -1,3 +1,4 @@
+const { count } = require('console');
 const express = require('express');
 const path = require('path');
 const WebSocket = require('ws');
@@ -8,7 +9,7 @@ const port = 3000;
 
 
 let gameOn = false;
-
+let intervalId = null;
 // 
 
 
@@ -24,33 +25,33 @@ const wss = new WebSocket.Server({ port: 8080, host: '0.0.0.0' });
 
 let clients = {};
 let players = { // dummy 플레이어 추가
-    dummy: {
-        id: '1',
-        name: 'dummy1',
-        hp: 100,
-        position: { x: 4, y: 0.6, z: -8 },
-        rotation: { y: 0 },
-        weapon: null,
-        state: "alive"
-    },
-    dummy1: {
-      id: '2',
-      name: 'dummy2',
-      hp: 100,
-      position: { x: 5, y: 0.6, z: -8 },
-      rotation: { y: 0 },
-      weapon: null,
-      state: "alive"
-  },
-  dummy2: {
-    id: '3',
-    name: 'dummy3',
-    hp: 100,
-    position: { x: 6, y: 0.6, z: -8 },
-    rotation: { y: 0 },
-    weapon: null,
-    state: "alive"
-}
+//     dummy: {
+//         id: '1',
+//         name: 'dummy1',
+//         hp: 100,
+//         position: { x: 4, y: 0.6, z: -8 },
+//         rotation: { y: 0 },
+//         weapon: null,
+//         state: "alive"
+//     },
+//     dummy1: {
+//       id: '2',
+//       name: 'dummy2',
+//       hp: 100,
+//       position: { x: 5, y: 0.6, z: -8 },
+//       rotation: { y: 0 },
+//       weapon: null,
+//       state: "alive"
+//   },
+//   dummy2: {
+//     id: '3',
+//     name: 'dummy3',
+//     hp: 100,
+//     position: { x: 6, y: 0.6, z: -8 },
+//     rotation: { y: 0 },
+//     weapon: null,
+//     state: "alive"
+// }
 };
 let whiteboards = {};
 let items = { // dummy 아이템 추가
@@ -98,7 +99,8 @@ wss.on('connection', (ws) => {
         hp: 100,
         position: { x: 0, y: 0, z: 0 },
         rotation: { y: 0 },
-        weapon: null // 초기 무기 정보
+        weapon: null, // 초기 무기 정보
+        state: 'alive'
       };
 
       // 기존 클라이언트에게 새로운 클라이언트 정보 전달 (현재 클라이언트를 제외)
@@ -124,7 +126,7 @@ wss.on('connection', (ws) => {
 
     // 공격 이벤트 처리
     if (data.type === 'attack') {
-      console.log("server: attack");
+      // console.log("server: attack");
       broadcast(JSON.stringify({
         type: 'attack',
         id: ws.id
@@ -133,7 +135,7 @@ wss.on('connection', (ws) => {
 
     // 총 발사 이벤트 처리
     if (data.type === 'shoot') {
-      console.log("server: shoot");
+      // console.log("server: shoot");
       broadcast(JSON.stringify({
         type: 'shoot',
         id: ws.id
@@ -142,7 +144,7 @@ wss.on('connection', (ws) => {
 
     // 데미지 이벤트 처리
     if (data.type === 'damage') {
-      console.log("server: damage");
+      // console.log("server: damage");
       const targetClient = clients[data.targetId];
       if (targetClient && players[data.targetId]) {
         // HP 감소
@@ -155,6 +157,21 @@ wss.on('connection', (ws) => {
             type:"death",
             playerId : data.targetId
           }))
+          //gameOver조건 - player 한 명
+          const {alivePlayer, aliveCount} = countAlivePlayers(players);
+          console.log("aliveCount",aliveCount);
+          if(aliveCount==1){
+            if(intervalId!==null){
+              clearInterval(intervalId);
+            }
+            broadcast(JSON.stringify({
+              type:"gameOver",
+              winner: alivePlayer
+
+            }))
+          }
+          resetPlayers();
+          gameOn = false;
         }
         // 모든 클라이언트에게 브로드캐스트
         broadcast(JSON.stringify({
@@ -193,10 +210,19 @@ wss.on('connection', (ws) => {
     // 일단 3 2 1  start 카운트 처리하기
     // 아이템 뿌리고 시작
     if (data.type === "gameStart") {
-
+      console.log("gameStart");
       if(gameOn) return;
       gameOn = true;
+      
+      if(Object.keys(players).length === 1){
+        broadcast(JSON.stringify({
+          type: "cantStartGame"
 
+        }))
+        gameOn = false;
+        return;
+      }
+      
       sendGameStartSequence().then(() => {
           items = generateRandomItems(20);
           console.log(items.length);
@@ -205,7 +231,7 @@ wss.on('connection', (ws) => {
               items: items
           }));
 
-          broadcastRemainingTime(60);
+          broadcastEverySecond();
 
       });
     }
@@ -235,7 +261,22 @@ wss.on('connection', (ws) => {
     broadcast(JSON.stringify({ type: 'removePlayer', id }));
   });
 });
+function countAlivePlayers(players) {
+  let aliveCount = 0;
+  let alivePlayer = null;
+  for (const id in players) {
+    if (players.hasOwnProperty(id)) {
+      const player = players[id];
+      console.log("player: ",player);
+      if (player.state === 'alive') {
+        aliveCount++;
+        alivePlayer = player;
+      }
+    }
+  }
 
+  return {alivePlayer, aliveCount};
+}
 //gameSequence 보내기
 function sendGameStartSequence() {
   return new Promise((resolve) => {
@@ -295,31 +336,18 @@ function resetPlayers() {
   }
   items = {};
 }
-//game 남은 시간 세기
-function broadcastRemainingTime(n) {
-  let remainingTime = n;
-  
-  // n초 동안 remainingTime을 broadcast
-  const intervalId = setInterval(() => {
-      if (remainingTime > 0) {
-          broadcast(JSON.stringify({
-              type: "remainingTime",
-              time: remainingTime
-          }));
-          remainingTime--;
-      }
-  }, 1000); // 1000ms = 1초
+function broadcastEverySecond() {
+  let elapsedTime = 0;
 
-  // n초 후에 다른 메시지를 broadcast하고 interval을 종료
-  setTimeout(() => {
-      clearInterval(intervalId);
-      resetPlayers();
-      broadcast(JSON.stringify({
-          type: "gameOver",
-          players: players
-      }));
-  }, n * 1000); // n초 후에 실행
-  gameOn = false;
+  // 1초마다 메시지를 broadcast
+  intervalId = setInterval(() => {
+    elapsedTime++;
+    broadcast(JSON.stringify({
+      type: "remainingTime",
+      time: elapsedTime
+    }));
+  }, 1000); // 1000ms = 1초
 }
+
 
 console.log('WebSocket server is running on ws://localhost:8080');

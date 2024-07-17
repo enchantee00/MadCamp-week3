@@ -242,41 +242,43 @@ ws.onmessage = (message) => {
         }, 500);
     //gamecounting
     }else if(data.type === 'remainingTime'){
+        console.log(data.time);
         hideElement();
         // console.log(data.remainingTime);
         showRemainingTime(true, data.time);
     
+    }else if(data.type === "cantStartGame"){
+        showMessage("Can't start the game. At least 2 players needed.");
 
     //game이 끝나면 모든 아이템 지우기
     } else if(data.type === "gameOver"){
         showElement();
-        // console.log("gameover");
         showRemainingTime(false);
         deleteAllItems();
-        const playersInServer = data.players;
+        // const playersInServer = data.players;
         // console.log(playersInServer);
         // console.log(players);
         for (let clientId in players) {
             //플레이어들 상태 복귀시키기.
             if (players.hasOwnProperty(clientId)) {
-              players[clientId].weapon = playersInServer[clientId].weapon;
+              players[clientId].weapon = null;
               players[clientId].hp = 100;
               updateHPBar(players[clientId]);
               players[clientId].rotation.x = 0;
               players[clientId].position.y = 0.6;
+              players[clientId].state = "alive";
               updatePlayerWeapon(players[clientId], null);
             }
         }
-        if(myLocalCharacter){
-            localCharacter = myLocalCharacter;
-            myLocalCharacter = null;
-            showCharacter(localCharacter);
-            // console.log("revival deadPosition:", deadPosition);
-            localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
-            deadPosition = null;
-            localCharacter.position.y = 0.6;
-        }
+
+        // console.log("revival deadPosition:", deadPosition);
+        // localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
+        // deadPosition = null;
+        // localCharacter.position.y = 0.6;
+
         blockInput(false);
+
+        showMessage(`Winner is " ${data.winner.name}"  !`);
         
     } else if (data.type === 'whiteboardUpdate') {
         const { whiteboardId, text } = data;
