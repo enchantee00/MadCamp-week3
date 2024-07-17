@@ -4,6 +4,7 @@ let items = {}; // 로컬 아이템 관리
 
 let myLocalCharacter = null;
 let deadPosition ;
+let focusCharacter=null;
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
@@ -18,7 +19,7 @@ let isInputBlocked = false; // 입력을 막는 플래그
 
 
 // WebSocket 연결 설정
-const ws = new WebSocket('ws://143.248.226.210:8080');
+const ws = new WebSocket('ws://143.248.226.140:8080');
 
 
 function init(){
@@ -86,8 +87,8 @@ ws.onmessage = (message) => {
                     updateHPBar(character);
                     players[clientId] = character; 
                     players[clientId].weapon = state.weapon;
-                    players[clientId].state = 'dead';
-
+                    players[clientId].state = 'alive';
+                    console.log(players[clientId].state);
                     updatePlayerWeapon(character,state.weapon);
                     // 여기서 character 객체 추가
 
@@ -160,14 +161,9 @@ ws.onmessage = (message) => {
         // 피해 이벤트 처리
         let player = players[data.targetId];
         if (player) { 
-            player.hp -= data.damage;
+            player.hp = data.remainHP;
             // console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
             updateHPBar(player);
-            if (player.hp <= 0) {
-                player.hp = 0;
-                // 캐릭터 쓰러짐
-                player.rotation.x = Math.PI / 2;
-            }
         }
     } else if (data.type === 'attack') {
         console.log("gameState: attack");
@@ -192,8 +188,8 @@ ws.onmessage = (message) => {
             if(player == localCharacter){
                 // console.log("내가 죽었어용!");
                 //방향키에 따라 시점 변경 구현하기
-                myLocalCharacter = localCharacter;
-                deadPosition = localCharacter.position.clone();
+                // myLocalCharacter = localCharacter;
+                // deadPosition = localCharacter.position.clone();
                 // console.log("deadPosition: ",deadPosition);
                 blockInput(true);
             }
@@ -360,15 +356,18 @@ function handleKeyup(event) {
 }
 
 // localCharacter를 변경하는 함수
+
 function changeCharacter(direction) {
-    hideCharacter(myLocalCharacter);
-    characters = Object.values(players).filter(character => (character != myLocalCharacter)&&(character.state == 'alive'));
+    // hideCharacter(myLocalCharacter);
+    // myLocalCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
+    characters = Object.values(players).filter(character => (character != myLocalCharacter) && (character.state == 'alive'));
+    // console.log(characters);
     characterIndex = (characterIndex + direction + characters.length) % characters.length;
-    localCharacter = characters[characterIndex];
+    focusCharacter = characters[characterIndex];
     // console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
+    console.log("fo");
 
-
-
+}
 // 키보드 이벤트 리스너 추가
 document.addEventListener('keydown', handleKeydown);
 document.addEventListener('keyup', handleKeyup);
@@ -541,14 +540,6 @@ function performAttack(attacker) {
                     const playerBox = new THREE.Box3().setFromObject(player);
                     if (attackRange.intersectsBox(playerBox)) {
                         console.log(id, '에게 공격 적중!');
-
-                        player.hp -= 10;
-                        updateHPBar(player);
-
-                        if (player.hp <= 0) {
-                            player.hp = 0;
-                            // player.rotation.x = Math.PI / 2;
-                        }
 
                         ws.send(JSON.stringify({
                             type: 'damage',

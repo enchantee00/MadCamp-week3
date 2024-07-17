@@ -160,7 +160,7 @@ wss.on('connection', (ws) => {
         broadcast(JSON.stringify({
           type: 'damage',
           targetId: data.targetId,
-          damage: data.damage
+          remainHP: players[data.targetId].hp
         }));
       }
     }
@@ -290,8 +290,10 @@ function resetPlayers() {
     if (players.hasOwnProperty(id)) {
       players[id].weapon = null;
       players[id].hp = 100;
+      players[id].state = "alive";
     }
   }
+  items = {};
 }
 //game 남은 시간 세기
 function broadcastRemainingTime(n) {

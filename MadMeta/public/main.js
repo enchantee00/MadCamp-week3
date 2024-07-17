@@ -373,6 +373,32 @@ function followCharacter() {
     }
     // controls.target.copy(localCharacter.position);
 }
+// 카메라가 focusCharacter를 따라가도록 설정
+function followAliveCharacter() {
+    if (!focusCharacter) return;
+    if (cameraMode === 0) {
+        // 기본 시점
+        camera.position.x = focusCharacter.position.x;
+        camera.position.z = focusCharacter.position.z + 10;
+        camera.position.y = focusCharacter.position.y + 5;
+        camera.lookAt(focusCharacter.position);
+    } else if (cameraMode === 1) {
+        // 1인칭 시점
+        const direction = new THREE.Vector3();
+        focusCharacter.getWorldDirection(direction);
+        camera.position.copy(focusCharacter.position).add(new THREE.Vector3(0, 1.6, 0));
+        camera.position.add(direction.multiplyScalar(0.5));
+        camera.lookAt(focusCharacter.position.clone().add(direction.multiplyScalar(7)));
+    } else if (cameraMode === 2) {
+        // 3인칭 뒷통수 시점
+        const direction = new THREE.Vector3();
+        focusCharacter.getWorldDirection(direction);
+        camera.position.copy(focusCharacter.position).add(new THREE.Vector3(0, 1.5, 0).sub(direction.multiplyScalar(2)));
+        camera.lookAt(focusCharacter.position);
+    }
+    // controls.target.copy(focusCharacter.position);
+}
+
 
 function updateChatBubbles() {
     Object.keys(chatBubbles).forEach(playerId => {
@@ -393,8 +419,13 @@ function updateChatBubbles() {
 
 function animate() {
     requestAnimationFrame(animate);
-    moveCharacter(); // 로컬 캐릭터 이동
-    followCharacter(); // 카메라가 로컬 캐릭터를 따라가도록 설정
+    if(!isInputBlocked){
+        moveCharacter(); // 로컬 캐릭터 이동
+        followCharacter(); // 카메라가 로컬 캐릭터를 따라가도록 설정
+    }
+    if(isInputBlocked){
+        followAliveCharacter();
+    }
     detectCharacterCollision(); // 캐릭터 간 충돌 감지
     updateBullets(); // 총알 업데이트
     // controls.update(); // OrbitControls 업데이트
@@ -436,13 +467,6 @@ function animate() {
             bar.lookAt(camera.position);
         }
     });
-
-    // if (localCharacter) {
-    //     const localBar = localCharacter.children.find(child => child.geometry instanceof THREE.PlaneGeometry && child.material.color.getHex() === 0xff0000);
-    //     if (localBar) {
-    //         localBar.lookAt(camera.position);
-    //     }
-    // }
 
     renderer.render(scene, camera);
     sendUpdate();
