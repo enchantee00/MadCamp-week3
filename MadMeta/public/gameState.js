@@ -83,9 +83,9 @@ ws.onmessage = (message) => {
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
-                    character.state = state.state;
                     players[clientId] = character; 
                     players[clientId].weapon = state.weapon;
+                    players[clientId].state = 'dead';
 
                     updatePlayerWeapon(character,state.weapon);
                     // 여기서 character 객체 추가
@@ -106,6 +106,13 @@ ws.onmessage = (message) => {
                 }
             }
        
+        }
+        // 아이템 추가
+        if (data.items) {
+            Object.keys(data.items).forEach(itemId => {
+                const item = data.items[itemId];
+                createItem(itemId, item.type, item.position);
+            });
         }
 
 
@@ -192,6 +199,7 @@ ws.onmessage = (message) => {
 
             // console.log(data.playerId);
             updatePlayerWeapon(player, null);
+            player.state = "dead";
             player.hp = 0;
             updateHPBar(player);
             player.rotation.x = Math.PI /2 ;
@@ -213,6 +221,7 @@ ws.onmessage = (message) => {
     }
     
     else if (data.type ==="readyForGame"){
+        hideElement();
         console.log(data.state);
         toggleGameCount(true, data.state);
     // gameStart! 아이템 시작;    
@@ -235,12 +244,14 @@ ws.onmessage = (message) => {
         }, 500);
     //gamecounting
     }else if(data.type === 'remainingTime'){
+        hideElement();
         // console.log(data.remainingTime);
         showRemainingTime(true, data.time);
     
 
     //game이 끝나면 모든 아이템 지우기
     } else if(data.type === "gameOver"){
+        showElement();
         // console.log("gameover");
         showRemainingTime(false);
         deleteAllItems();
@@ -285,6 +296,27 @@ ws.onclose = () => {
     });
 };
 
+
+    function hideElement() {
+        const element = document.getElementById('startBox');
+        if (element) {
+            element.style.display = 'none';
+        } else {
+            console.error('Element with id "myButton" not found');
+        }
+    }
+
+    function showElement() {
+        const element = document.getElementById('startBox');
+        if (element) {
+            element.style.display = 'block';
+        } else {
+            console.error('Element with id "myButton" not found');
+        }
+    }
+
+
+
 function showMessage(message) {
     const messageBox = document.getElementById("message-box");
     messageBox.textContent = message;
@@ -324,11 +356,11 @@ function handleKeyup(event) {
 // localCharacter를 변경하는 함수
 function changeCharacter(direction) {
     hideCharacter(myLocalCharacter);
-    characters = Object.values(players).filter(character => character != myLocalCharacter);
+    characters = Object.values(players).filter(character => (character != myLocalCharacter)&&(character.state == 'alive'));
     characterIndex = (characterIndex + direction + characters.length) % characters.length;
     localCharacter = characters[characterIndex];
     // console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
-}
+
 
 
 // 키보드 이벤트 리스너 추가
@@ -545,7 +577,7 @@ let shootingInProgress = false;
 async function performShoot(shooter) {
     console.log("performShoot: ", shooter);
     if (!shooter || shootingInProgress) {
-        console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
+        // console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
         return;
     }
 

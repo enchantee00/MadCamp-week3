@@ -77,7 +77,7 @@ wss.on('connection', (ws) => {
   clients[id] = ws;
 
   // 새로운 클라이언트에게 기존 클라이언트 정보와 아이템 정보 전달
-  ws.send(JSON.stringify({ type: 'init', states: players, whiteboard: whiteboards}));
+  ws.send(JSON.stringify({ type: 'init', states: players, whiteboard: whiteboards,items:items}));
 
   // 새로운 플레이어 정보를 players 객체에 추가ㅁㅈ
   players[id] = {
@@ -141,6 +141,7 @@ wss.on('connection', (ws) => {
         players[data.targetId].hp = (players[data.targetId].hp || 100) - data.damage;
 
         if(players[data.targetId].hp == 0){
+          players[data.targetId].state = "dead";
           console.log("player death", players[data.targetId]);
           broadcast(JSON.stringify({
             type:"death",
@@ -235,7 +236,7 @@ function sendGameStartSequence() {
               clearInterval(countdown);
               broadcast(JSON.stringify({
                   type: 'readyForGame',
-                  state: 'gamestart'
+                  state: 'Game Start!'
               }));
               resolve(); // Promise를 해결하여 후속 작업을 실행 가능하게 합니다.
           }
