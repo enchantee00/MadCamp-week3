@@ -3,6 +3,7 @@ const keyState = {};
 let items = {}; // 로컬 아이템 관리
 
 let myLocalCharacter = null;
+let deadPosition ;
 
 let lastPosition = new THREE.Vector3();
 let lastRotationY = 0;
@@ -18,6 +19,7 @@ let isInputBlocked = false; // 입력을 막는 플래그
 
 // WebSocket 연결 설정
 const ws = new WebSocket('ws://143.248.226.210:8080');
+
 
 function init(){
     document.addEventListener('DOMContentLoaded', () => {
@@ -82,15 +84,15 @@ ws.onmessage = (message) => {
                     character.rotation.y = state.rotation.y;
                     character.hp = state.hp || 100; // 초기 hp 설정
                     updateHPBar(character);
-                    character.state = state.state;
                     players[clientId] = character; 
                     players[clientId].weapon = state.weapon;
+                    players[clientId].state = 'dead';
 
                     updatePlayerWeapon(character,state.weapon);
                     // 여기서 character 객체 추가
 
                 }
-                console.log(players[clientId]);
+                // console.log(players[clientId]);
 
             });
         }
@@ -105,6 +107,13 @@ ws.onmessage = (message) => {
                 }
             }
        
+        }
+        // 아이템 추가
+        if (data.items) {
+            Object.keys(data.items).forEach(itemId => {
+                const item = data.items[itemId];
+                createItem(itemId, item.type, item.position);
+            });
         }
 
 
@@ -152,7 +161,7 @@ ws.onmessage = (message) => {
         let player = players[data.targetId];
         if (player) { 
             player.hp -= data.damage;
-            console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
+            // console.log(`플레이어 ${data.targetId}이(가) 피해를 입었습니다. HP: ${player.hp}`);
             updateHPBar(player);
             if (player.hp <= 0) {
                 player.hp = 0;
@@ -180,17 +189,22 @@ ws.onmessage = (message) => {
     }else if(data.type === "death"){
         const player = players[data.playerId];
         if(player){
+            if(player == localCharacter){
+                // console.log("내가 죽었어용!");
+                //방향키에 따라 시점 변경 구현하기
+                myLocalCharacter = localCharacter;
+                deadPosition = localCharacter.position.clone();
+                // console.log("deadPosition: ",deadPosition);
+                blockInput(true);
+            }
+            showMessage(`Player ${data.playerId} is dead.`);
+
+            // console.log(data.playerId);
+            updatePlayerWeapon(player, null);
+            player.state = "dead";
             player.hp = 0;
             updateHPBar(player);
             player.rotation.x = Math.PI /2 ;
-            if(player == localCharacter){
-                console.log("내가 죽었어용!");
-                //방향키에 따라 시점 변경 구현하기
-                myLocalCharacter = localCharacter;
-                blockInput(true);
-                localCharacter = characters[0];
-
-            }
         }
     }  else if (data.type === 'itemRemoved') {
         console.log("gameState: itemRemoved");
@@ -209,6 +223,7 @@ ws.onmessage = (message) => {
     }
     
     else if (data.type ==="readyForGame"){
+        hideElement();
         console.log(data.state);
         toggleGameCount(true, data.state);
     // gameStart! 아이템 시작;    
@@ -231,13 +246,15 @@ ws.onmessage = (message) => {
         }, 500);
     //gamecounting
     }else if(data.type === 'remainingTime'){
+        hideElement();
         // console.log(data.remainingTime);
         showRemainingTime(true, data.time);
     
 
     //game이 끝나면 모든 아이템 지우기
     } else if(data.type === "gameOver"){
-        console.log("gameover");
+        showElement();
+        // console.log("gameover");
         showRemainingTime(false);
         deleteAllItems();
         const playersInServer = data.players;
@@ -256,6 +273,12 @@ ws.onmessage = (message) => {
         }
         if(myLocalCharacter){
             localCharacter = myLocalCharacter;
+            myLocalCharacter = null;
+            showCharacter(localCharacter);
+            // console.log("revival deadPosition:", deadPosition);
+            localCharacter.position.set(deadPosition.x,deadPosition.y,deadPosition.z);
+            deadPosition = null;
+            localCharacter.position.y = 0.6;
         }
         blockInput(false);
         
@@ -280,6 +303,37 @@ ws.onclose = () => {
 };
 
 
+    function hideElement() {
+        const element = document.getElementById('startBox');
+        if (element) {
+            element.style.display = 'none';
+        } else {
+            console.error('Element with id "myButton" not found');
+        }
+    }
+
+    function showElement() {
+        const element = document.getElementById('startBox');
+        if (element) {
+            element.style.display = 'block';
+        } else {
+            console.error('Element with id "myButton" not found');
+        }
+    }
+
+
+
+function showMessage(message) {
+    const messageBox = document.getElementById("message-box");
+    messageBox.textContent = message;
+    messageBox.style.display = "block";
+    
+    // 3초 후에 메시지 박스를 숨깁니다.
+    setTimeout(() => {
+        messageBox.style.display = "none";
+    }, 3000);
+}
+
 
 // 키보드 입력을 처리하는 함수
 function handleKeydown(event) {
@@ -287,7 +341,6 @@ function handleKeydown(event) {
     keyState[event.code] = true;
 
     if (isInputBlocked) {
-        event.preventDefault();
         if (key === 'arrowleft') {
             // 왼쪽 방향키를 누르면 이전 캐릭터로 변경
             changeCharacter(-1);
@@ -295,7 +348,8 @@ function handleKeydown(event) {
             // 오른쪽 방향키를 누르면 다음 캐릭터로 변경
             changeCharacter(1);
         } else {
-            console.log(`${key.toUpperCase()} key pressed but no action defined.`);
+            event.preventDefault();
+            // console.log(`${key.toUpperCase()} key pressed but no action defined.`);
         }
     }
 }
@@ -307,11 +361,12 @@ function handleKeyup(event) {
 
 // localCharacter를 변경하는 함수
 function changeCharacter(direction) {
-    characters = Object.values(players);
+    hideCharacter(myLocalCharacter);
+    characters = Object.values(players).filter(character => (character != myLocalCharacter)&&(character.state == 'alive'));
     characterIndex = (characterIndex + direction + characters.length) % characters.length;
     localCharacter = characters[characterIndex];
-    console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
-}
+    // console.log("Changed character to: ", characters,"+", players,"+", Object.values(players));
+
 
 
 // 키보드 이벤트 리스너 추가
@@ -321,6 +376,51 @@ document.addEventListener('keyup', handleKeyup);
 // 입력을 막는 함수
 function blockInput(block) {
     isInputBlocked = block;
+}
+
+function hideCharacter(character) {
+    if (!character.originalMaterials) {
+        character.originalMaterials = {};
+    }
+
+    character.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+            // 원래 재질을 저장
+            character.originalMaterials[child.uuid] = child.material;
+
+            // 투명하게 만들어서 안 보이게 함
+            child.material = new THREE.MeshBasicMaterial({ 
+                color: child.material.color, 
+                transparent: true, 
+                opacity: 0 
+            });
+        } else if (child.isSprite) {
+            // TextSprite를 숨김
+            child.visible = false;
+        }
+    });
+}
+function showCharacter(character) {
+    if (!character.originalMaterials) {
+        console.warn("No original materials found for this character.");
+        return;
+    }
+    console.log("showCharacter");
+    character.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+            // 원래 재질로 복구
+            if (character.originalMaterials[child.uuid]) {
+                child.material = character.originalMaterials[child.uuid];
+                child.material.opacity = 1;
+            }
+        } else if (child.isSprite) {
+            // TextSprite를 보이게 함
+            child.visible = true;
+        }
+    });
+
+    // 원래 재질 정보를 제거하여 메모리 누수를 방지
+    delete character.originalMaterials;
 }
 
 
@@ -379,7 +479,7 @@ function animateAttack() {
 
 function performAttack(attacker) {
     console.log("performattack");
-    if (!attacker || attackInProgress || !hasSword) {
+    if (!attacker || attackInProgress) {
         console.log("이미 공격중이거나 공격자가 없습니다.");
         return;
     }
@@ -481,9 +581,9 @@ let shootingInProgress = false;
 
 // 이 함수는 캐릭터가 총을 발사하는 로직을 실행합니다.
 async function performShoot(shooter) {
-    console.log("performShoot");
-    if (!shooter || shootingInProgress || !hasGun) {
-        console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
+    console.log("performShoot: ", shooter);
+    if (!shooter || shootingInProgress) {
+        // console.log("hasGun:", hasGun, '무기가 없거나 공격 중입니다!');
         return;
     }
 
@@ -640,16 +740,10 @@ function updatePlayerWeapon(player, weapon) {
         if (weapon === 'sword') {
             weaponGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            hasGun = false;
-            hasSword = true;
         } else if (weapon === 'gun') {
             weaponGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.6);
             weaponMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-            hasGun = true;
-            hasSword = false;
-        } else{
-            hasGun = false;
-            hasSword = false;
+
         }
         const newWeapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
         rightArm.add(newWeapon);
